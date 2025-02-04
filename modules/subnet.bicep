@@ -3,7 +3,7 @@ param vnetName string
 param subnetAddrPrefix string
 param routeTableId string
 
-resource subnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' = {
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
   name: '${vnetName}/${subnetName}'
   properties:{ 
     addressPrefix: subnetAddrPrefix
@@ -12,5 +12,3 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' = {
     }
   }
 }
-
-output subnetId string = subnet.id
