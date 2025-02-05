@@ -1,8 +1,8 @@
 param vnetName string
 param vnetAddrPrefix array
 param location string
-param subnetId string
-param dnsServer array
+param subnets array
+param dnsServer array = []
 
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2019-11-01' = {
   name: vnetName
@@ -14,12 +14,7 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2019-11-01' = {
     dhcpOptions: {
       dnsServers: dnsServer
     }
-    subnets: [
-      {
-        id: subnetId
-      }
-    ]
-        
+    subnets: subnets 
   }
 }
 

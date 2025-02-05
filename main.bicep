@@ -2,6 +2,7 @@ targetScope = 'subscription'
 
 param location string = 'italynorth'
 
+
 /*Resource Groups*/
 var hubRgName = 'rg-hub-in'
 var spoke1RgName = 'rg-spoke1-in'
@@ -9,36 +10,43 @@ var spoke2RgName = 'rg-spoke2-in'
 var automationRgName = 'rg-automation-in'
 var identityRgName = 'rg-identity-in'
 
-
 /*VNET*/
 var hubVnetName = 'vnet-hub-in'
 var identityVnetName = 'vnet-identity-in'
 var spoke1VnetName = 'vnet-spoke1-in'
 var spoke2VnetName = 'vnet-spoke2-in'
 
+var hubVnetAddrPrefix = ['10.0.10.0/24']
+var identityVnetAddrPrefix = ['10.0.20.0/24']
+var spoke1VnetAddrPrefix = ['10.0.30.0/24']
+var spoke2VnetAddrPrefix = ['10.0.40.0/24']
 
-var hubVnetAddrPrefix = '10.0.10.0/24'
-var identityVnetAddrPrefix = '10.0.20.0/24'
-var spoke1VnetAddrPrefix = '10.0.30.0/24'
-var spoke2VnetAddrPrefix = '10.0.40.0/24'
+/*SUBNET*/
+var hubSubnetAddrPrefix = ['10.0.10.0/26']
+var dcSubnetAddrPrefix = ['10.0.20.0/27']
+var linuxSubnetAddrPrefix = ['10.0.30.0/27']
+var winSubnetAddrPrefix = ['10.0.40.0/27']
 
-var hubSubnetAddrPrefix = '10.0.10.0/26'
-var dcSubnetAddrPrefix = '10.0.20.0/27'
-var linuxSubnetAddrPrefix = '10.0.30.0/27'
-var winSubnetAddrPrefix = '10.0.40.0/27'
-
+/*ROUTE TABLE*/
 var spoke1RouteTableName = 'rt-spoke1-vnet'
 var identityRouteTableName = 'rt-identity-vnet'
 var spoke2RouteTableName = 'rt-spoke2-vnet'
 
-var identitySubnetRouteTableRoutes = {
-  name: 'default-via-azfw'
-  properties: {
-    addressPrefix: '0.0.0.0/0'
-    nextHopType: 'VirtualAppliance'
-    nextHopIpAddress: //azureFirewall.outputs.firewallPrivateIp
+var firewallName = 'afw-hub-in'
+var fwTier = 'Premium'
+var fwPolicyName = 'afw-policy-hub-in'
+
+
+var identitySubnetRouteTableRoutes = [
+  {
+    name: 'default-via-azfw'
+    properties: {
+      addressPrefix: '0.0.0.0/0'
+      nextHopType: 'VirtualAppliance'
+      nextHopIpAddress: azureFirewall.outputs.firewallPrivateIp
+    }
   }
-}
+]
 
 var spoke1SubnetRouteTableRoutes = [
   {
@@ -46,36 +54,37 @@ var spoke1SubnetRouteTableRoutes = [
     properties: {
       addressPrefix: '0.0.0.0/0'
       nextHopType: 'VirtualAppliance'
-      nextHopIpAddress: //azureFirewall.outputs.firewallPrivateIp
+      nextHopIpAddress: azureFirewall.outputs.firewallPrivateIp
     }
   }
   {
     name: 'fwpip-via-internet'
     properties: {
-      addressPrefix: //azureFirewall.outputs.firewallPublicIp
+      addressPrefix: azureFirewallPublicIp.outputs.ipAddress
       nextHopType: 'Internet'
     }
   }
 ]
 
-var spoke2SubnetRouteTableRoutes = {
-  name: 'default-via-azfw'
-  properties: {
-    addressPrefix: '0.0.0.0/0'
-    nextHopType: 'VirtualAppliance'
-    nextHopIpAddress: //azureFirewall.outputs.firewallPrivateIp
+var spoke2SubnetRouteTableRoutes = [
+  {
+    name: 'default-via-azfw'
+    properties: {
+      addressPrefix: '0.0.0.0/0'
+      nextHopType: 'VirtualAppliance'
+      nextHopIpAddress: azureFirewall.outputs.firewallPrivateIp
+    }
   }
-}
+]
     
-
 
 var hubSubnet = [
   {
     subnetAddrPrefix: hubSubnetAddrPrefix
     subnetName: 'AzureFirewallSubnet'
     vnetName: hubVnetName
-    nsgId: //TODO
-    routeTableId: //TODO
+    nsgId: ''
+    routeTableId: ''
   }
 ]
 
@@ -84,8 +93,8 @@ var identitySubnet = [
     subnetAddrPrefix: identityVnetAddrPrefix
     subnetName: 'snet-dc'
     vnetName: dcSubnetAddrPrefix
-    nsgId: //TODO
-    routeTableId: //TODO
+    nsgId: identityNsg.outputs.nsgId
+    routeTableId: ''
   }
 ]
 
@@ -93,8 +102,8 @@ var spoke1Subnet = [
   {
     subnetAddrPrefix: linuxSubnetAddrPrefix
     subnetName: 'snet-linux-vms'
-    nsgId: //TODO
-    routeTableId: //TODO
+    nsgId: spoke1Nsg.outputs.nsgId
+    routeTableId: ''
   }
 ]
 
@@ -102,8 +111,8 @@ var spoke2Subnet = [
   {
     subnetAddrPrefix: winSubnetAddrPrefix
     subnetName: 'snet-win-vms'
-    nsgId: //TODO
-    routeTableId: //TODO
+    nsgId: spoke2Nsg.outputs.nsgId
+    routeTableId: ''
   }
 ]
 
@@ -158,7 +167,7 @@ module hubVnet 'modules/vnet.bicep' = {
     location: location
     vnetName: hubVnetName
     vnetAddrPrefix: hubVnetAddrPrefix
-    subnet: hubSubnet
+    subnets: hubSubnet
   }
   dependsOn: [
     hubResourceGroup
@@ -172,7 +181,7 @@ module identityVnet 'modules/vnet.bicep' = {
     location: location
     vnetName: identityVnetName
     vnetAddrPrefix: identityVnetAddrPrefix
-    subnet: identitySubnet
+    subnets: identitySubnet
   }
   dependsOn: [
     identityResourceGroup
@@ -186,7 +195,7 @@ module spoke1Vnet 'modules/vnet.bicep' = {
     location: location
     vnetName: spoke1VnetName
     vnetAddrPrefix: spoke1VnetAddrPrefix
-    subnet: spoke1Subnet
+    subnets: spoke1Subnet
   }
   dependsOn: [
     spoke1ResourceGroup
@@ -200,7 +209,7 @@ module spoke2Vnet 'modules/vnet.bicep' = {
     location: location
     vnetName: spoke2VnetName
     vnetAddrPrefix: spoke2VnetAddrPrefix
-    subnet: spoke2Subnet
+    subnets: spoke2Subnet
   }
   dependsOn: [
     spoke2ResourceGroup
@@ -287,14 +296,44 @@ module identityToHubPeering 'modules/vnetPeering.bicep' = {
   ]
 }
 
+// NSG //
 
-// ROUTE TABLES //
+module spoke1Nsg 'modules/networkSecurityGroup.bicep' = {
+  name: 'spoke1Nsg'
+  scope: resourceGroup(hubRgName)
+  params: {
+    location: location
+    name: 'nsg-spoke1-in'
+  }
+}
+
+module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
+  name: 'spoke2Nsg'
+  scope: resourceGroup(hubRgName)
+  params: {
+    location: location
+    name: 'nsg-spoke2-in'
+  }
+}
+
+module identityNsg 'modules/networkSecurityGroup.bicep' = {
+  name: 'identityNsg'
+  scope: resourceGroup(hubRgName)
+  params: {
+    location: location
+    name: 'nsg-identity-in'
+  }
+}
+
+
+// ROUTE TABLES and ROUTES //
 module spoke1RouteTable 'modules/routeTable.bicep' = {
   name: 'Spoke1RouteTable'
   scope: resourceGroup(hubRgName)
   params: {
     location: location
     routeTableName: spoke1RouteTableName
+    routeTableRoutes: spoke1SubnetRouteTableRoutes
   }
   dependsOn: [
     spoke1Vnet
@@ -307,6 +346,7 @@ module spoke2RouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: spoke2RouteTableName
+    routeTableRoutes: spoke2SubnetRouteTableRoutes
   }
   dependsOn: [
     spoke2Vnet
@@ -319,6 +359,7 @@ module identityRouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: identityRouteTableName
+    routeTableRoutes: identitySubnetRouteTableRoutes
   }
   dependsOn: [
     identityVnet
@@ -326,7 +367,7 @@ module identityRouteTable 'modules/routeTable.bicep' = {
 }
 
 
-module onpremHubDcVmDomainControllerConfig 'virtualmachineextension.bicep' = {
+module onpremHubDcVmDomainControllerConfig 'modules/virtualmachineextension.bicep' = {
   name: 'onpremHubDcVmDomainControllerConfig'
   scope: resourceGroup(onpremHubRgName)
   params: {
@@ -340,6 +381,34 @@ module onpremHubDcVmDomainControllerConfig 'virtualmachineextension.bicep' = {
   ]
 }
 
+
+// FIREWALL //
+module azureFirewallPublicIp 'modules/publicIp.bicep' = {
+  name: 'azureFirewallPublicIp'
+  scope: resourceGroup(hubRgName)
+  params: {
+    location: location
+    publicIpAddressName: 'pip-afw-hub-in'
+  }
+}
+
+
+module azureFirewall 'modules/firewall.bicep' = {
+  name: 'azureFirewall'
+  scope: resourceGroup(hubRgName)
+  params: {
+    location: 'italynorth'
+    fwName: firewallName
+    fwPolicyName: fwPolicyName
+    publicIpId: azureFirewallPublicIp.outputs.ipId
+    subnetId: hubSubnet.outputs.subnetId
+    fwTier: fwTier
+  }
+  dependsOn: [
+    azureFirewallPublicIp
+    hubSubnet
+  ]
+}
 
 
 // UPDATE VNET DNS//
@@ -412,13 +481,4 @@ module spoke2SubnetRouteTableRoutesConf 'modules/routeTableRoute.bicep' = {
 
 
 
-/*module azureFirewall 'firewall.bicep' = {
-  name: 'azureFirewall'
-  scope: resourceGroup(resourceGroup)
-  params: {
-    location: 'italynorth'
-    fwName: firewallName
-    fwPolicyName: fwPolicyName
-    publicIpId: azureFirewallPublicIp.outputs.ipId
-  }
-}*/
+

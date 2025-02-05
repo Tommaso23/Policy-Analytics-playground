@@ -1,11 +1,21 @@
 param fwPolicyName string
+param location string
 param fwName string
 param subnetId string
 param publicIpId string
-param enableMgmtConf bool
-param mgmtSubnetId string
-param mgmtPublicIpId string
+param fwTier string
 
+
+resource firewallPolicy 'Microsoft.Network/firewallPolicies@2022-05-01' = {
+  name: fwPolicyName
+  location: location
+  properties: {
+    sku: {
+      tier: fwTier
+    }
+    threatIntelMode: 'Alert'
+  }
+}
 
 
 resource firewall 'Microsoft.Network/azureFirewalls@2024-03-01' = {
@@ -38,29 +48,7 @@ resource firewall 'Microsoft.Network/azureFirewalls@2024-03-01' = {
     firewallPolicy: {
       id: firewallPolicy.id
     }
-    managementIpConfiguration: enableMgmtConf == false ? null : {
-      name: 'mgmtfirewallconf'
-      properties: {
-        subnet: {
-          id: mgmtSubnetId
-        }
-        publicIPAddress: {
-          id: mgmtPublicIpId
-        }
-      }
-    }
-    ipConfigurations: [
-      {
-        name: 'primaryfirewallconf'
-        properties: {
-          subnet: {
-            id: subnetId
-          }
-          publicIPAddress: {
-            id: publicIpId
-          }
-        }
-      }
-    ]
   }
 }
+
+output firewallPrivateIp string = firewall.properties.ipConfigurations[0].properties.privateIPAddress
