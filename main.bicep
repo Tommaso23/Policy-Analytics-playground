@@ -15,7 +15,6 @@ var hubVnetName = 'vnet-hub-in'
 var identityVnetName = 'vnet-identity-in'
 var spoke1VnetName = 'vnet-spoke1-in'
 var spoke2VnetName = 'vnet-spoke2-in'
-
 var hubVnetAddrPrefix = ['10.0.10.0/24']
 var identityVnetAddrPrefix = ['10.0.20.0/24']
 var spoke1VnetAddrPrefix = ['10.0.30.0/24']
