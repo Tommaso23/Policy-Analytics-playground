@@ -14,6 +14,7 @@ var hubVnetName = 'vnet-hub-itn'
 var identityVnetName = 'vnet-identity-itn'
 var spoke1VnetName = 'vnet-spoke1-itn'
 var spoke2VnetName = 'vnet-spoke2-itn'
+
 var hubVnetAddrPrefix = ['10.0.10.0/24']
 var identityVnetAddrPrefix = ['10.0.20.0/24']
 var spoke1VnetAddrPrefix = ['10.0.30.0/24']
@@ -25,6 +26,44 @@ var dcSubnetAddrPrefix = ['10.0.20.0/27']
 var linuxSubnetAddrPrefix = ['10.0.30.0/27']
 var winSubnetAddrPrefix = ['10.0.40.0/27']
 
+var hubSubnet = [
+  {
+    subnetAddrPrefix: hubSubnetAddrPrefix
+    subnetName: 'AzureFirewallSubnet'
+    vnetName: hubVnetName
+    nsgId: ''
+    routeTableId: ''
+  }
+]
+
+var identitySubnet = [
+  {
+    subnetAddrPrefix: identityVnetAddrPrefix
+    subnetName: 'snet-dc'
+    vnetName: dcSubnetAddrPrefix
+    nsgId: identityNsg.outputs.nsgId
+    routeTableId: ''
+  }
+]
+
+var spoke1Subnet = [
+  {
+    subnetAddrPrefix: linuxSubnetAddrPrefix
+    subnetName: 'snet-linux-vms'
+    nsgId: spoke1Nsg.outputs.nsgId
+    routeTableId: ''
+  }
+]
+
+var spoke2Subnet = [
+  {
+    subnetAddrPrefix: winSubnetAddrPrefix
+    subnetName: 'snet-win-vms'
+    nsgId: spoke2Nsg.outputs.nsgId
+    routeTableId: ''
+  }
+]
+
 /*ROUTE TABLE*/
 var spoke1RouteTableName = 'rt-spoke1-vnet'
 var identityRouteTableName = 'rt-identity-vnet'
@@ -33,7 +72,6 @@ var spoke2RouteTableName = 'rt-spoke2-vnet'
 var firewallName = 'afw-hub-itn'
 var fwTier = 'Premium'
 var fwPolicyName = 'afw-policy-hub-itn'
-
 
 var identitySubnetRouteTableRoutes = [
   {
@@ -75,45 +113,6 @@ var spoke2SubnetRouteTableRoutes = [
   }
 ]
     
-
-var hubSubnet = [
-  {
-    subnetAddrPrefix: hubSubnetAddrPrefix
-    subnetName: 'AzureFirewallSubnet'
-    vnetName: hubVnetName
-    nsgId: ''
-    routeTableId: ''
-  }
-]
-
-var identitySubnet = [
-  {
-    subnetAddrPrefix: identityVnetAddrPrefix
-    subnetName: 'snet-dc'
-    vnetName: dcSubnetAddrPrefix
-    nsgId: identityNsg.outputs.nsgId
-    routeTableId: ''
-  }
-]
-
-var spoke1Subnet = [
-  {
-    subnetAddrPrefix: linuxSubnetAddrPrefix
-    subnetName: 'snet-linux-vms'
-    nsgId: spoke1Nsg.outputs.nsgId
-    routeTableId: ''
-  }
-]
-
-var spoke2Subnet = [
-  {
-    subnetAddrPrefix: winSubnetAddrPrefix
-    subnetName: 'snet-win-vms'
-    nsgId: spoke2Nsg.outputs.nsgId
-    routeTableId: ''
-  }
-]
-
 
 // RESOURCE GROUPS //
 module hubResourceGroup 'modules/resourceGroup.bicep' = {
@@ -295,7 +294,6 @@ module identityToHubPeering 'modules/vnetPeering.bicep' = {
 }
 
 // NSG //
-
 module spoke1Nsg 'modules/networkSecurityGroup.bicep' = {
   name: 'spoke1Nsg'
   scope: resourceGroup(hubRgName)
@@ -323,7 +321,6 @@ module identityNsg 'modules/networkSecurityGroup.bicep' = {
   }
 }
 
-
 // ROUTE TABLES and ROUTES //
 module spoke1RouteTable 'modules/routeTable.bicep' = {
   name: 'Spoke1RouteTable'
@@ -331,7 +328,7 @@ module spoke1RouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: spoke1RouteTableName
-    routeTableRoutes: spoke1SubnetRouteTableRoutes
+    //routeTableRoutes: spoke1SubnetRouteTableRoutes
   }
   dependsOn: [
     spoke1Vnet
@@ -344,7 +341,7 @@ module spoke2RouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: spoke2RouteTableName
-    routeTableRoutes: spoke2SubnetRouteTableRoutes
+    //routeTableRoutes: spoke2SubnetRouteTableRoutes
   }
   dependsOn: [
     spoke2Vnet
@@ -357,28 +354,12 @@ module identityRouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: identityRouteTableName
-    routeTableRoutes: identitySubnetRouteTableRoutes
+    //routeTableRoutes: identitySubnetRouteTableRoutes
   }
   dependsOn: [
     identityVnet
   ]
 }
-
-
-module onpremHubDcVmDomainControllerConfig 'modules/virtualmachineextension.bicep' = {
-  name: 'onpremHubDcVmDomainControllerConfig'
-  scope: resourceGroup(onpremHubRgName)
-  params: {
-    location: location
-    properties: onpremDcConfigurationExtensionProperties
-    vmExtensionName: 'DC-Creation'
-    vmName: onpremHubDcName
-  }
-  dependsOn: [
-    onpremHubDcVm
-  ]
-}
-
 
 // FIREWALL //
 module azureFirewallPublicIp 'modules/publicIp.bicep' = {
@@ -399,12 +380,22 @@ module azureFirewall 'modules/firewall.bicep' = {
     fwName: firewallName
     fwPolicyName: fwPolicyName
     publicIpId: azureFirewallPublicIp.outputs.ipId
-    subnetId: hubSubnet.outputs.subnetId
+    subnetId: hubVnet.outputs.subnets[0].subnetId
     fwTier: fwTier
   }
+}
+
+module onpremHubDcVmDomainControllerConfig 'modules/virtualmachineextension.bicep' = {
+  name: 'onpremHubDcVmDomainControllerConfig'
+  scope: resourceGroup(onpremHubRgName)
+  params: {
+    location: location
+    properties: onpremDcConfigurationExtensionProperties
+    vmExtensionName: 'DC-Creation'
+    vmName: onpremHubDcName
+  }
   dependsOn: [
-    azureFirewallPublicIp
-    hubSubnet
+    onpremHubDcVm
   ]
 }
 
