@@ -1,20 +1,19 @@
 targetScope = 'subscription'
 
-param location string = 'italynorth'
-
+param location string = deployment().location
 
 /*Resource Groups*/
-var hubRgName = 'rg-hub-in'
-var spoke1RgName = 'rg-spoke1-in'
-var spoke2RgName = 'rg-spoke2-in'
-var automationRgName = 'rg-automation-in'
-var identityRgName = 'rg-identity-in'
+var hubRgName = 'rg-hub-itn'
+var spoke1RgName = 'rg-spoke1-itn'
+var spoke2RgName = 'rg-spoke2-itn'
+var automationRgName = 'rg-automation-itn'
+var identityRgName = 'rg-identity-itn'
 
 /*VNET*/
-var hubVnetName = 'vnet-hub-in'
-var identityVnetName = 'vnet-identity-in'
-var spoke1VnetName = 'vnet-spoke1-in'
-var spoke2VnetName = 'vnet-spoke2-in'
+var hubVnetName = 'vnet-hub-itn'
+var identityVnetName = 'vnet-identity-itn'
+var spoke1VnetName = 'vnet-spoke1-itn'
+var spoke2VnetName = 'vnet-spoke2-itn'
 var hubVnetAddrPrefix = ['10.0.10.0/24']
 var identityVnetAddrPrefix = ['10.0.20.0/24']
 var spoke1VnetAddrPrefix = ['10.0.30.0/24']
@@ -31,9 +30,9 @@ var spoke1RouteTableName = 'rt-spoke1-vnet'
 var identityRouteTableName = 'rt-identity-vnet'
 var spoke2RouteTableName = 'rt-spoke2-vnet'
 
-var firewallName = 'afw-hub-in'
+var firewallName = 'afw-hub-itn'
 var fwTier = 'Premium'
-var fwPolicyName = 'afw-policy-hub-in'
+var fwPolicyName = 'afw-policy-hub-itn'
 
 
 var identitySubnetRouteTableRoutes = [
