@@ -60,6 +60,19 @@ var spokeVmIISExtensionProperties = {
   }
 }
 
+var domainJoinedVmProperties = {
+  publisher: 'Microsoft.Compute'
+  type: 'JsonADDomainExtension'
+  typeHandlerVersion: '1.3'
+  autoUpgradeMinorVersion: true
+  settings: {
+    Name: 'contoso.com'
+    OUPath: 'OU=Azure,DC=contoso,DC=com'
+    User: 'contoso\\administrator'
+    Restart: 'true'
+  }
+}
+
 
 var hubSubnet = [
   {
@@ -507,6 +520,20 @@ module azureSpokeVmIISConfiguration2 'modules/virtualmachineextension.bicep' = {
   }
   dependsOn: [
     spoke2IISvirtualmachine2
+  ]
+}
+
+module onpremSpokeVmDomainJoin 'modules/virtualmachineextension.bicep' = {
+  name: 'onpremSpokeVmDomainJoin'
+  scope: resourceGroup(spoke2RgName)
+  params: {
+    location: location
+    properties: domainJoinedVmProperties
+    vmExtensionName: 'OnpremSpoke-DomainJoin'
+    vmName: IIS1ComputerName
+  }
+  dependsOn: [
+    spoke2IISvirtualmachine1
   ]
 }
 
