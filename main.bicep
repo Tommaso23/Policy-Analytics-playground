@@ -192,6 +192,7 @@ var spoke2SubnetRouteTableRoutes = [
     }
   }
 ]
+
     
 
 // RESOURCE GROUPS //
@@ -497,19 +498,16 @@ module domainController 'modules/virtualmachine.bicep' = {
     offer: windowsOffer
     sku: windowsSku
   }
-  dependsOn: [
-    identityVnet
-  ]
 }
 
-module spokeVmDomainControllerConfig 'modules/virtualmachineextension.bicep' = {
+module VmDomainControllerConfig 'modules/virtualmachineextension.bicep' = {
   name: 'spokeVmDomainControllerConfig'
   scope: resourceGroup(spoke2RgName)
   params: {
     location: location
     properties: spokeDcConfigurationExtensionProperties
     vmExtensionName: 'DC-Creation'
-    vmName: 
+    vmName: domainControllerComputerName
   }
   dependsOn: [
     domainController
@@ -552,6 +550,28 @@ module IIS2 'modules/virtualmachine.bicep' = {
     publisher: windowsPublisher
     offer: windowsOffer
     sku: windowsSku
+  }
+}
+
+module IIS1VmDomainJoin 'modules/virtualmachineextension.bicep' = {
+  name: 'onpremSpokeVmDomainJoin'
+  scope: resourceGroup(spoke2RgName)
+  params: {
+    location: location
+    properties: IISDomainJoinConfiguration
+    vmExtensionName: 'OnpremSpoke-DomainJoin'
+    vmName: IIS1ComputerName
+  }
+}
+
+module IIS2VmDomainJoin 'modules/virtualmachineextension.bicep' = {
+  name: 'onpremSpokeVmDomainJoin'
+  scope: resourceGroup(spoke2RgName)
+  params: {
+    location: location
+    properties: IISDomainJoinConfiguration
+    vmExtensionName: 'OnpremSpoke-DomainJoin'
+    vmName: IIS2ComputerName
   }
 }
 
