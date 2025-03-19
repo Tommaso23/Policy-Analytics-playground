@@ -2,41 +2,28 @@ targetScope = 'subscription'
 
 param location string = deployment().location
 
-
-param _artifactsLocation string = deployment().properties.templateLink.uri
-
-@description('Auto-generated token to access _artifactsLocation. Leave it blank unless you need to provide your own value.')
-@secure()
-param _artifactsLocationSasToken string = ''
-
 /*Resource Groups*/
 var hubRgName = 'rg-hub-itn'
 var spoke1RgName = 'rg-spoke1-itn'
 var spoke2RgName = 'rg-spoke2-itn'
 var automationRgName = 'rg-automation-itn'
-var identityRgName = 'rg-identity-itn'
 
 /*VNET*/
 var hubVnetName = 'vnet-hub-itn'
-var identityVnetName = 'vnet-identity-itn'
 var spoke1VnetName = 'vnet-spoke1-itn'
 var spoke2VnetName = 'vnet-spoke2-itn'
 
 var hubVnetAddrPrefix = ['10.0.10.0/24']
-var identityVnetAddrPrefix = ['10.0.20.0/24']
 var spoke1VnetAddrPrefix = ['10.0.30.0/24']
 var spoke2VnetAddrPrefix = ['10.0.40.0/24']
 
 /*SUBNET*/
+///TODO: adjust firewall policy CIDR
 var hubSubnetAddrPrefix = ['10.0.10.0/26']
-var dcSubnetAddrPrefix = ['10.0.20.0/27']
-var linuxSubnetAddrPrefix = ['10.0.30.0/27']
-var winSubnetAddrPrefix = ['10.0.40.0/27']
+var linuxSubnetAddrPrefix = ['10.0.20.0/27']
+var winSubnetAddrPrefix = ['10.0.30.0/27']
 
 /*VIRTUAL MACHINE*/
-var domainControllerComputerName = 'vm-dc1-itn'
-
-
 @description('username administrator for all VMs')
 param adminUsername string = 'azureuser'
 
@@ -49,6 +36,8 @@ var IIS2ComputerName = 'vm-iis-2-itn'
 var linux1ComputerName = 'vm-lnx-1-itn'
 var linux2ComputerName = 'vm-lnx-2-itn'
 var linux1PublicIpName = 'pip-${linux1ComputerName}'
+var linux2PublicIpName = 'pip-${linux2ComputerName}'
+
 
 var windowsPublisher = 'MicrosoftWindowsServer'
 var windowsOffer = 'WindowsServer'
@@ -68,59 +57,12 @@ var spokeVmIISExtensionProperties = {
   }
 }
 
-var IISDomainJoinConfiguration = {
-  publisher: 'Microsoft.Compute'
-  type: 'JsonADDomainExtension'
-  typeHandlerVersion: '1.3'
-  autoUpgradeMinorVersion: true
-  settings: {
-    Name: 'contoso.com'
-    OUPath: 'OU=Azure,DC=contoso,DC=com'
-    User: 'contoso\\administrator'
-    Restart: 'true'
-  }
-}
-
-var spokeDcConfigurationExtensionProperties = {
-  publisher: 'Microsoft.Powershell'
-  type: 'DSC'
-  typeHandlerVersion: '2.73'
-  autoUpgradeMinorVersion: true
-  settings: {
-    ModulesUrl: uri(_artifactsLocation, 'DSC/CreateADPDC.zip${_artifactsLocationSasToken}')
-    ConfigurationFunction: 'CreateADPDC.ps1\\CreateADPDC'
-    Properties: {
-      DomainName: 'contoso.com'
-      AdminCreds: {
-        UserName: adminUsername
-        Password: 'PrivateSettingsRef:AdminPassword'
-      }
-    }
-  }
-  protectedSettings: {
-    Items: {
-      AdminPassword: adminPassword
-    }
-  }
-}
-
-
 var hubSubnet = [
   {
     subnetAddrPrefix: hubSubnetAddrPrefix
     subnetName: 'AzureFirewallSubnet'
     vnetName: hubVnetName
     nsgId: ''
-    routeTableId: ''
-  }
-]
-
-var identitySubnet = [
-  {
-    subnetAddrPrefix: identityVnetAddrPrefix
-    subnetName: 'snet-dc'
-    vnetName: dcSubnetAddrPrefix
-    nsgId: identityNsg.outputs.nsgId
     routeTableId: ''
   }
 ]
@@ -145,24 +87,12 @@ var spoke2Subnet = [
 
 /*ROUTE TABLE*/
 var spoke1RouteTableName = 'rt-spoke1-vnet'
-var identityRouteTableName = 'rt-identity-vnet'
 var spoke2RouteTableName = 'rt-spoke2-vnet'
 
+/*FIREWALL*/
 var firewallName = 'afw-hub-itn'
 var fwTier = 'Premium'
 var fwPolicyName = 'afw-policy-hub-itn'
-
-
-var identitySubnetRouteTableRoutes = [
-  {
-    name: 'default-via-azfw'
-    properties: {
-      addressPrefix: '0.0.0.0/0'
-      nextHopType: 'VirtualAppliance'
-      nextHopIpAddress: azureFirewall.outputs.firewallPrivateIp
-    }
-  }
-]
 
 var spoke1SubnetRouteTableRoutes = [
   {
@@ -220,15 +150,6 @@ module spoke2ResourceGroup 'modules/resourceGroup.bicep' = {
   }
 }
 
-
-module identityResourceGroup 'modules/resourceGroup.bicep' = {
-  name: 'identityResourceGroup'
-  params: {
-    location: location
-    rgName: identityRgName
-  }
-}
-
 module automationResourceGroup 'modules/resourceGroup.bicep' = {
   name: 'automationResourceGroup'
   params: {
@@ -252,21 +173,6 @@ module hubVnet 'modules/vnet.bicep' = {
     hubResourceGroup
   ]
 }
-
-module identityVnet 'modules/vnet.bicep' = {
-  name: 'identityVnet'
-  scope: resourceGroup(identityRgName)
-  params: {
-    location: location
-    vnetName: identityVnetName
-    vnetAddrPrefix: identityVnetAddrPrefix
-    subnets: identitySubnet
-  }
-  dependsOn: [
-    identityResourceGroup
-  ]
-}
-
 module spoke1Vnet 'modules/vnet.bicep' = {
   name: 'spoke1Vnet'
   scope: resourceGroup(spoke1RgName)
@@ -323,21 +229,6 @@ module hubToSpoke2Peering 'modules/vnetPeering.bicep' = {
   ]
 }
 
-
-module hubToIdentityPeering 'modules/vnetPeering.bicep' = {
-  name: 'hubToIdentityPeering'
-  scope: resourceGroup(hubRgName)
-  params: {
-    peeringName: 'hubToIdentity'
-    sourceVnetName: hubVnetName
-    destinationVnetId: identityVnet.outputs.vnetId
-  }
-  dependsOn: [
-    hubVnet
-  ]
-}
-
-
 module spoke1ToHubPeering 'modules/vnetPeering.bicep' = {
   name: 'spoke1ToHubPeering'
   scope: resourceGroup(spoke1RgName)
@@ -364,19 +255,6 @@ module spoke2ToHubPeering 'modules/vnetPeering.bicep' = {
   ]
 }
 
-module identityToHubPeering 'modules/vnetPeering.bicep' = {
-  name: 'identityToHubPeering'
-  scope: resourceGroup(identityRgName)
-  params: {
-    peeringName: 'identityToHub'
-    sourceVnetName: identityVnetName
-    destinationVnetId: hubVnet.outputs.vnetId
-  }
-  dependsOn: [
-    identityVnet
-  ]
-}
-
 // NSG //
 module spoke1Nsg 'modules/networkSecurityGroup.bicep' = {
   name: 'spoke1Nsg'
@@ -393,16 +271,6 @@ module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
   params: {
     location: location
     name: 'nsg-spoke2-in'
-  }
-}
-
-
-module identityNsg 'modules/networkSecurityGroup.bicep' = {
-  name: 'identityNsg'
-  scope: resourceGroup(hubRgName)
-  params: {
-    location: location
-    name: 'nsg-identity-in'
   }
 }
 
@@ -431,19 +299,6 @@ module spoke2RouteTable 'modules/routeTable.bicep' = {
   }
   dependsOn: [
     spoke2Vnet
-  ]
-}
-
-module identityRouteTable 'modules/routeTable.bicep' = {
-  name: 'IdentityRouteTable'
-  scope: resourceGroup(hubRgName)
-  params: {
-    location: location
-    routeTableName: identityRouteTableName
-    //routeTableRoutes: identitySubnetRouteTableRoutes
-  }
-  dependsOn: [
-    identityVnet
   ]
 }
 
@@ -479,40 +334,6 @@ module azureFirewall 'modules/firewall.bicep' = {
   ]
 }
 
-// DOMAIN CONTROLLER //
-
-module domainController 'modules/virtualmachine.bicep' = {
-  name: 'domainController'
-  scope: resourceGroup(hubRgName)
-  params: {
-    location: location
-    virtualMachineName: domainControllerComputerName
-    osDiskType: 'Standard_LRS'
-    computerName: domainControllerComputerName
-    adminUsername: adminUsername
-    adminPassword: adminPassword
-    subnetId: identityVnet.outputs.subnets[0].subnetId
-    privateIpAddress: '10.0.20.5'
-    publicIpId: ''
-    publisher: windowsPublisher
-    offer: windowsOffer
-    sku: windowsSku
-  }
-}
-
-module VmDomainControllerConfig 'modules/virtualmachineextension.bicep' = {
-  name: 'spokeVmDomainControllerConfig'
-  scope: resourceGroup(spoke2RgName)
-  params: {
-    location: location
-    properties: spokeDcConfigurationExtensionProperties
-    vmExtensionName: 'DC-Creation'
-    vmName: domainControllerComputerName
-  }
-  dependsOn: [
-    domainController
-  ]
-}
 
 
 module IIS1 'modules/virtualmachine.bicep' = {
@@ -553,27 +374,6 @@ module IIS2 'modules/virtualmachine.bicep' = {
   }
 }
 
-module IIS1VmDomainJoin 'modules/virtualmachineextension.bicep' = {
-  name: 'onpremSpokeVmDomainJoin'
-  scope: resourceGroup(spoke2RgName)
-  params: {
-    location: location
-    properties: IISDomainJoinConfiguration
-    vmExtensionName: 'OnpremSpoke-DomainJoin'
-    vmName: IIS1ComputerName
-  }
-}
-
-module IIS2VmDomainJoin 'modules/virtualmachineextension.bicep' = {
-  name: 'onpremSpokeVmDomainJoin'
-  scope: resourceGroup(spoke2RgName)
-  params: {
-    location: location
-    properties: IISDomainJoinConfiguration
-    vmExtensionName: 'OnpremSpoke-DomainJoin'
-    vmName: IIS2ComputerName
-  }
-}
 
 module IISConfiguration1 'modules/virtualmachineextension.bicep' = {
   name: 'IISConfiguration-1'
@@ -581,7 +381,7 @@ module IISConfiguration1 'modules/virtualmachineextension.bicep' = {
   params: {
     location: location
     properties: spokeVmIISExtensionProperties
-    vmExtensionName: 'DC-Creation'
+    vmExtensionName: 'IIS-installation'
     vmName: IIS1ComputerName
   }
   dependsOn: [
@@ -595,7 +395,7 @@ module IISConfiguration2 'modules/virtualmachineextension.bicep' = {
   params: {
     location: location
     properties: spokeVmIISExtensionProperties
-    vmExtensionName: 'DC-Creation'
+    vmExtensionName: 'IIS-installation'
     vmName: IIS2ComputerName
   }
   dependsOn: [
@@ -639,7 +439,7 @@ module linux2PublicIp 'modules/publicip.bicep' = {
   scope: resourceGroup(spoke1RgName)
   params: {
     location: location
-    publicIpAddressName: linux1PublicIpName
+    publicIpAddressName: linux2PublicIpName
   }
   dependsOn: [
     spoke1ResourceGroup
