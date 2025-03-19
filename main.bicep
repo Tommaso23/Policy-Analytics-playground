@@ -282,10 +282,10 @@ module spoke1RouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: spoke1RouteTableName
-    //routeTableRoutes: spoke1SubnetRouteTableRoutes
+    routes: spoke1SubnetRouteTableRoutes
   }
   dependsOn: [
-    spoke1Vnet
+    spoke1ResourceGroup
   ]
 }
 
@@ -295,10 +295,10 @@ module spoke2RouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: spoke2RouteTableName
-    //routeTableRoutes: spoke2SubnetRouteTableRoutes
+    routes: spoke2SubnetRouteTableRoutes
   }
   dependsOn: [
-    spoke2Vnet
+    spoke2ResourceGroup
   ]
 }
 
