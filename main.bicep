@@ -14,13 +14,12 @@ var spoke1VnetName = 'vnet-spoke1-itn'
 var spoke2VnetName = 'vnet-spoke2-itn'
 
 var hubVnetAddrPrefix = ['10.0.10.0/24']
-var spoke1VnetAddrPrefix = ['10.0.30.0/24']
-var spoke2VnetAddrPrefix = ['10.0.40.0/24']
+var spoke1VnetAddrPrefix = ['10.0.20.0/24']
+var spoke2VnetAddrPrefix = ['10.0.30.0/24']
 
 /*SUBNET*/
-///TODO: adjust firewall policy CIDR
 var hubSubnetAddrPrefix = ['10.0.10.0/26']
-var linuxSubnetAddrPrefix = ['10.0.20.0/27']
+var linuxSubnetAddrPrefix = ['10.0.20.0/27'] //before: 10.0.30.0/27
 var winSubnetAddrPrefix = ['10.0.30.0/27']
 
 /*VIRTUAL MACHINE*/
@@ -53,7 +52,7 @@ var spokeVmIISExtensionProperties = {
   typeHandlerVersion: '1.10'
   autoUpgradeMinorVersion: true
   protectedSettings: {
-    commandToExecute: 'powershell.exe Add-WindowsFeature Web-Server; powershell Add-Content -Path "C:\\inetpub\\wwwroot\\Default.htm" -Value $($env:computername); powershell Set-NetFirewallProfile -Enabled False'
+    commandToExecute: 'powershell.exe Add-WindowsFeature Web-Server; powershell.exe New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation Cert:\\LocalMachine\\My; powershell.exe Import-Module IISAdministration; powershell.exe New-IISSite -Name "Default Web Site" -PhysicalPath "C:\\inetpub\\wwwroot" -BindingInformation "*:443:" -CertificateStoreName "My" -CertificateHash (Get-ChildItem Cert:\\LocalMachine\\My | Where-Object {$_.Subject -match "CN=localhost"}).Thumbprint; powershell.exe Add-Content -Path "C:\\inetpub\\wwwroot\\Default.htm" -Value $($env:computername); powershell.exe Set-NetFirewallProfile -Enabled False'
   }
 }
 
@@ -347,7 +346,7 @@ module IIS1 'modules/virtualmachine.bicep' = {
     adminUsername: adminUsername
     adminPassword: adminPassword
     subnetId: spoke2Vnet.outputs.subnets[0].subnetId
-    privateIpAddress: '10.0.40.4'
+    privateIpAddress: '10.0.30.4'
     publicIpId: ''
     publisher: windowsPublisher
     offer: windowsOffer
@@ -366,7 +365,7 @@ module IIS2 'modules/virtualmachine.bicep' = {
     adminUsername: adminUsername
     adminPassword: adminPassword
     subnetId: spoke2Vnet.outputs.subnets[0].subnetId
-    privateIpAddress: '10.0.40.5'
+    privateIpAddress: '10.0.30.5'
     publicIpId: ''
     publisher: windowsPublisher
     offer: windowsOffer
@@ -426,7 +425,7 @@ module spoke1LinuxVM1 'modules/virtualmachine.bicep' = {
     adminUsername: adminUsername
     adminPassword: adminPassword
     subnetId: spoke1Vnet.outputs.subnets[0].subnetId
-    privateIpAddress: '10.0.30.4'
+    privateIpAddress: '10.0.20.4'
     publicIpId: linux1PublicIp.outputs.ipId
     publisher: linuxPublisher
     offer: linuxOffer
@@ -457,7 +456,7 @@ module spoke1LinuxVM2 'modules/virtualmachine.bicep' = {
     adminUsername: adminUsername
     adminPassword: adminPassword
     subnetId: spoke1Vnet.outputs.subnets[0].subnetId
-    privateIpAddress: '10.0.30.4'
+    privateIpAddress: '10.0.20.4'
     publicIpId: linux2PublicIp.outputs.ipId
     publisher: linuxPublisher
     offer: linuxOffer
