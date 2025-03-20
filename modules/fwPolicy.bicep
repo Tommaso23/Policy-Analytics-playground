@@ -18,7 +18,7 @@ var dnatRuleCollections = [
       {
         ruleType: 'NatRule'
         name: 'ssh-lnx001'
-        translatedAddress: '10.0.30.4'
+        translatedAddress: '10.0.20.4'
         translatedPort: '22'
         sourceAddresses: [
           '*'
@@ -36,7 +36,7 @@ var dnatRuleCollections = [
       {
         ruleType: 'NatRule'
         name: 'ssh-lnx002'
-        translatedAddress: '10.0.30.5'
+        translatedAddress: '10.0.20.5'
         translatedPort: '22'
         sourceAddresses: [
           '*'
@@ -64,7 +64,7 @@ var dnatRuleCollections = [
       {
         ruleType: 'NatRule'
         name: 'rdp-win001'
-        translatedAddress: '10.0.40.4'
+        translatedAddress: '10.0.30.4'
         translatedPort: '3389'
         sourceAddresses: [
           '*'
@@ -82,7 +82,7 @@ var dnatRuleCollections = [
       {
         ruleType: 'NatRule'
         name: 'rdp-win002'
-        translatedAddress: '10.0.40.5'
+        translatedAddress: '10.0.30.5'
         translatedPort: '3389'
         sourceAddresses: [
           '*'
@@ -100,7 +100,7 @@ var dnatRuleCollections = [
       {
         ruleType: 'NatRule'
         name: 'https-win001'
-        translatedAddress: '10.0.40.4'
+        translatedAddress: '10.0.30.4'
         translatedPort: '443'
         sourceAddresses: [
           '*'
@@ -118,7 +118,7 @@ var dnatRuleCollections = [
       {
         ruleType: 'NatRule'
         name: 'https-win002'
-        translatedAddress: '10.0.40.5'
+        translatedAddress: '10.0.30.5'
         translatedPort: '443'
         sourceAddresses: [
           '*'
@@ -196,7 +196,7 @@ var spokeToSpokeRuleCollections = [
         ruleType: 'NetworkRule'
         name: 'https-win'
         destinationAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
         destinationPorts: [
           '443'
@@ -206,29 +206,29 @@ var spokeToSpokeRuleCollections = [
           'UDP'
         ]
         sourceAddresses: [
-          '10.0.30.0/28'
-          '10.0.30.16/28'
-          '10.0.30.32/28'
-          '10.0.30.48/28'
-          '10.0.30.64/28'
-          '10.0.30.80/28'
-          '10.0.30.96/28'
-          '10.0.30.112/28'
-          '10.0.30.128/28'
-          '10.0.30.144/28'
-          '10.0.30.160/28'
-          '10.0.30.176/28'
-          '10.0.30.192/28'
-          '10.0.30.208/28'
-          '10.0.30.224/28'
-          '10.0.30.240/28'
+          '10.0.20.0/28'
+          '10.0.20.16/28'
+          '10.0.20.32/28'
+          '10.0.20.48/28'
+          '10.0.20.64/28'
+          '10.0.20.80/28'
+          '10.0.20.96/28'
+          '10.0.20.112/28'
+          '10.0.20.128/28'
+          '10.0.20.144/28'
+          '10.0.20.160/28'
+          '10.0.20.176/28'
+          '10.0.20.192/28'
+          '10.0.20.208/28'
+          '10.0.20.224/28'
+          '10.0.20.240/28'
         ]
       }
       {
         ruleType: 'NetworkRule'
         name: 'rdp-win'
         destinationAddresses: [
-          '10.0.40.0/27'
+          '10.0.30.0/27'
         ]
         destinationPorts: [
           '3389'
@@ -238,14 +238,14 @@ var spokeToSpokeRuleCollections = [
           'UDP'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
       {
         ruleType: 'NetworkRule'
         name: 'rdp-win-dup'
         destinationAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
         destinationPorts: [
           '3389'
@@ -255,14 +255,14 @@ var spokeToSpokeRuleCollections = [
           'UDP'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
       {
         ruleType: 'NetworkRule'
         name: 'icmp-win'
         destinationAddresses: [
-          '10.0.40.0/27'
+          '10.0.30.0/27'
         ]
         destinationPorts: [
           '*'
@@ -271,14 +271,14 @@ var spokeToSpokeRuleCollections = [
           'ICMP'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
       {
         ruleType: 'NetworkRule'
         name: 'icmp-win-dup'
         destinationAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
         destinationPorts: [
           '*'
@@ -287,15 +287,15 @@ var spokeToSpokeRuleCollections = [
           'ICMP'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
       {
         ruleType: 'NetworkRule'
         name: 'icmp-win-dup2'
         destinationAddresses: [
-          '10.0.40.0/25'
-          '10.0.40.0/25'
+          '10.0.30.0/25'
+          '10.0.30.0/25'
         ]
         destinationPorts: [
           '*'
@@ -304,7 +304,7 @@ var spokeToSpokeRuleCollections = [
           'ICMP'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
     ]
@@ -321,7 +321,7 @@ var spokeToSpokeRuleCollections = [
         ruleType: 'NetworkRule'
         name: 'ssh-lnx'
         destinationAddresses: [
-          '10.0.30.0/24'
+          '10.0.20.0/24'
         ]
         destinationPorts: [
           '22'
@@ -330,7 +330,7 @@ var spokeToSpokeRuleCollections = [
           'Any'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -346,7 +346,7 @@ var spokeToSpokeRuleCollections = [
           'ICMP'
         ]
         sourceAddresses: [
-          '10.0.40.0/27'
+          '10.0.30.0/27'
         ]
       }
     ]
@@ -376,7 +376,7 @@ var spokeToDCRuleCollections = [
           'Any'
         ]
         sourceAddresses: [
-          '10.0.30.0/24'
+          '10.0.20.0/24'
         ]
       }
       {
@@ -393,7 +393,7 @@ var spokeToDCRuleCollections = [
           'UDP'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
     ]
@@ -435,7 +435,7 @@ var spokeToDCRuleCollections = [
           'Any'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -455,7 +455,7 @@ var spokeToDCRuleCollections = [
           'TCP'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -473,7 +473,7 @@ var spokeToDCRuleCollections = [
           'UDP'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -490,7 +490,7 @@ var spokeToDCRuleCollections = [
           'UDP'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -506,7 +506,7 @@ var spokeToDCRuleCollections = [
           'Any'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -523,7 +523,7 @@ var spokeToDCRuleCollections = [
           'TCP'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -539,7 +539,7 @@ var spokeToDCRuleCollections = [
           'TCP'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -555,7 +555,7 @@ var spokeToDCRuleCollections = [
           'UDP'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -572,7 +572,7 @@ var spokeToDCRuleCollections = [
           'TCP'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
       {
@@ -588,7 +588,7 @@ var spokeToDCRuleCollections = [
           'Any'
         ]
         sourceAddresses: [
-          '10.0.40.0/24'
+          '10.0.30.0/24'
         ]
       }
     ]
@@ -617,10 +617,10 @@ var spokeToInternetDuplicatedRuleCollections = [
           '*.google.com'
         ]
         sourceAddresses: [
-          '10.0.30.0/29'
-          '10.0.30.8/29'
-          '10.0.30.16/29'
-          '10.0.30.32/29'
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
         ]
       }
       {
@@ -640,10 +640,10 @@ var spokeToInternetDuplicatedRuleCollections = [
           '*.youtube.com'
         ]
         sourceAddresses: [
-          '10.0.30.0/29'
-          '10.0.30.8/29'
-          '10.0.30.16/29'
-          '10.0.30.32/29'
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
         ]
       }
       {
@@ -663,10 +663,10 @@ var spokeToInternetDuplicatedRuleCollections = [
           'searchenginesandportals'
         ]
         sourceAddresses: [
-          '10.0.30.0/29'
-          '10.0.30.8/29'
-          '10.0.30.16/29'
-          '10.0.30.32/29'
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
         ]
       }
     ]
@@ -696,10 +696,10 @@ var spokeToInternetRuleCollections = [
           '*.google.com'
         ]
         sourceAddresses: [
-          '10.0.30.0/29'
-          '10.0.30.8/29'
-          '10.0.30.16/29'
-          '10.0.30.32/29'
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
         ]
       }
       {
@@ -719,10 +719,10 @@ var spokeToInternetRuleCollections = [
           '*.youtube.com'
         ]
         sourceAddresses: [
-          '10.0.30.0/29'
-          '10.0.30.8/29'
-          '10.0.30.16/29'
-          '10.0.30.32/29'
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
         ]
       }
       {
@@ -742,10 +742,10 @@ var spokeToInternetRuleCollections = [
           'searchenginesandportals'
         ]
         sourceAddresses: [
-          '10.0.30.0/29'
-          '10.0.30.8/29'
-          '10.0.30.16/29'
-          '10.0.30.32/29'
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
         ]
       }
       {
@@ -765,7 +765,7 @@ var spokeToInternetRuleCollections = [
           'socialnetworking'
         ]
         sourceAddresses: [
-            '10.0.30.0/27'
+            '10.0.20.0/27'
         ]
       }
       {
@@ -785,7 +785,7 @@ var spokeToInternetRuleCollections = [
           'news'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
       {
@@ -805,7 +805,7 @@ var spokeToInternetRuleCollections = [
           'gambling'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
       {
@@ -825,7 +825,7 @@ var spokeToInternetRuleCollections = [
           'alcoholandtobacco'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
       {
@@ -846,7 +846,7 @@ var spokeToInternetRuleCollections = [
           'security.ubuntu.com'
         ]
         sourceAddresses: [
-          '10.0.30.0/27'
+          '10.0.20.0/27'
         ]
       }
     ]
@@ -876,7 +876,7 @@ var spokeToInternetRuleCollections = [
           'WindowsUpdate'
         ]
         sourceAddresses: [
-          '10.0.40.0/27'
+          '10.0.30.0/27'
         ]
       }
       {
@@ -892,7 +892,7 @@ var spokeToInternetRuleCollections = [
           '*.google.com'
         ]
         sourceAddresses: [
-            '10.0.40.0/27'
+            '10.0.30.0/27'
         ]
       }
       {
@@ -912,7 +912,7 @@ var spokeToInternetRuleCollections = [
           '*.youtube.com'
         ]
         sourceAddresses: [
-            '10.0.40.0/27'
+            '10.0.30.0/27'
         ]
       }
       {
@@ -932,7 +932,7 @@ var spokeToInternetRuleCollections = [
           'searchenginesandportals'
         ]
         sourceAddresses: [
-            '10.0.40.0/27'
+            '10.0.30.0/27'
         ]
       }
       {
@@ -952,7 +952,7 @@ var spokeToInternetRuleCollections = [
           'socialnetworking'
         ]
         sourceAddresses: [
-            '10.0.40.0/27'
+            '10.0.30.0/27'
         ]
       }
       {
@@ -972,7 +972,7 @@ var spokeToInternetRuleCollections = [
           'news'
         ]
         sourceAddresses: [
-            '10.0.40.0/27'
+            '10.0.30.0/27'
         ]
       }
       {
@@ -992,7 +992,7 @@ var spokeToInternetRuleCollections = [
           'gambling'
         ]
         sourceAddresses: [
-          '10.0.40.0/27'
+          '10.0.30.0/27'
         ]
       }
       {
@@ -1012,7 +1012,7 @@ var spokeToInternetRuleCollections = [
           'alcoholandtobacco'
         ]
         sourceAddresses: [
-          '10.0.40.0/27'
+          '10.0.30.0/27'
         ]
       }
     ]
