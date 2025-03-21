@@ -15,6 +15,7 @@ resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2019-11-0
           protocol: '*'
           sourceAddressPrefix: '10.0.0.0/16'
           sourcePortRange: '*'
+          destinationAddressPrefix: '*'
           destinationPortRange: '*'
         }
       }
