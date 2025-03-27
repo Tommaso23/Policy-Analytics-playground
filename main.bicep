@@ -18,9 +18,9 @@ var spoke1VnetAddrPrefix = ['10.0.20.0/24']
 var spoke2VnetAddrPrefix = ['10.0.30.0/24']
 
 /*SUBNET*/
-var hubSubnetAddrPrefix = ['10.0.10.0/26']
-var linuxSubnetAddrPrefix = ['10.0.20.0/27'] //before: 10.0.30.0/27
-var winSubnetAddrPrefix = ['10.0.30.0/27']
+var hubSubnetAddrPrefix = '10.0.10.0/26'
+var linuxSubnetAddrPrefix = '10.0.20.0/27' //before: 10.0.30.0/27
+var winSubnetAddrPrefix = '10.0.30.0/27'
 
 /*VIRTUAL MACHINE*/
 @description('username administrator for all VMs')
@@ -56,33 +56,28 @@ var spokeVmIISExtensionProperties = {
   }
 }
 
-var hubSubnet = [
-  {
-    subnetAddrPrefix: hubSubnetAddrPrefix
-    subnetName: 'AzureFirewallSubnet'
-    vnetName: hubVnetName
-    nsgId: ''
-    routeTableId: ''
-  }
-]
+var hubSubnet = {
+  subnetAddrPrefix: hubSubnetAddrPrefix
+  subnetName: 'AzureFirewallSubnet'
+  vnetName: hubVnetName
+  nsgId: ''
+  routeTableId: ''
+}
 
-var spoke1Subnet = [
-  {
-    subnetAddrPrefix: linuxSubnetAddrPrefix
-    subnetName: 'snet-linux-vms'
-    nsgId: spoke1Nsg.outputs.nsgId
-    routeTableId: ''
-  }
-]
+var spoke1Subnet = {
+  subnetAddrPrefix: linuxSubnetAddrPrefix
+  subnetName: 'snet-linux-vms'
+  nsgId: spoke1Nsg.outputs.nsgId
+  routeTableId: ''
+}
 
-var spoke2Subnet = [
-  {
-    subnetAddrPrefix: winSubnetAddrPrefix
-    subnetName: 'snet-win-vms'
-    nsgId: spoke2Nsg.outputs.nsgId
-    routeTableId: ''
-  }
-]
+var spoke2Subnet = {
+  subnetAddrPrefix: winSubnetAddrPrefix
+  subnetName: 'snet-win-vms'
+  nsgId: spoke2Nsg.outputs.nsgId
+  routeTableId: ''
+}
+
 
 /*ROUTE TABLE*/
 var spoke1RouteTableName = 'rt-spoke1-vnet'
@@ -166,7 +161,7 @@ module hubVnet 'modules/vnet.bicep' = {
     location: location
     vnetName: hubVnetName
     vnetAddrPrefix: hubVnetAddrPrefix
-    subnets: hubSubnet
+    subnets: [hubSubnet]
   }
   dependsOn: [
     hubResourceGroup
@@ -179,7 +174,7 @@ module spoke1Vnet 'modules/vnet.bicep' = {
     location: location
     vnetName: spoke1VnetName
     vnetAddrPrefix: spoke1VnetAddrPrefix
-    subnets: spoke1Subnet
+    subnets: [spoke1Subnet]
   }
   dependsOn: [
     spoke1ResourceGroup
@@ -193,7 +188,7 @@ module spoke2Vnet 'modules/vnet.bicep' = {
     location: location
     vnetName: spoke2VnetName
     vnetAddrPrefix: spoke2VnetAddrPrefix
-    subnets: spoke2Subnet
+    subnets: [spoke2Subnet]
   }
   dependsOn: [
     spoke2ResourceGroup
@@ -323,7 +318,7 @@ module azureFirewall 'modules/firewall.bicep' = {
     fwName: firewallName
     fwPolicyName: fwPolicyName
     publicIpId: azureFirewallPublicIp.outputs.ipId
-    subnetId: hubVnet.outputs.subnets[0].subnetId
+    subnetId: hubVnet.outputs.subnets[0].id
     fwTier: fwTier
   }
   dependsOn: [
@@ -345,7 +340,7 @@ module IIS1 'modules/virtualmachine.bicep' = {
     computerName: IIS1ComputerName
     adminUsername: adminUsername
     adminPassword: adminPassword
-    subnetId: spoke2Vnet.outputs.subnets[0].subnetId
+    subnetId: spoke2Vnet.outputs.subnets[0].id
     privateIpAddress: '10.0.30.4'
     publicIpId: ''
     publisher: windowsPublisher
@@ -364,7 +359,7 @@ module IIS2 'modules/virtualmachine.bicep' = {
     computerName: IIS2ComputerName
     adminUsername: adminUsername
     adminPassword: adminPassword
-    subnetId: spoke2Vnet.outputs.subnets[0].subnetId
+    subnetId: spoke2Vnet.outputs.subnets[0].id
     privateIpAddress: '10.0.30.5'
     publicIpId: ''
     publisher: windowsPublisher
@@ -424,7 +419,7 @@ module spoke1LinuxVM1 'modules/virtualmachine.bicep' = {
     computerName: linux1ComputerName
     adminUsername: adminUsername
     adminPassword: adminPassword
-    subnetId: spoke1Vnet.outputs.subnets[0].subnetId
+    subnetId: spoke1Vnet.outputs.subnets[0].id
     privateIpAddress: '10.0.20.4'
     publicIpId: linux1PublicIp.outputs.ipId
     publisher: linuxPublisher
@@ -455,7 +450,7 @@ module spoke1LinuxVM2 'modules/virtualmachine.bicep' = {
     computerName: linux2ComputerName
     adminUsername: adminUsername
     adminPassword: adminPassword
-    subnetId: spoke1Vnet.outputs.subnets[0].subnetId
+    subnetId: spoke1Vnet.outputs.subnets[0].id
     privateIpAddress: '10.0.20.4'
     publicIpId: linux2PublicIp.outputs.ipId
     publisher: linuxPublisher
