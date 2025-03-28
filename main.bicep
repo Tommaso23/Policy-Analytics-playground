@@ -276,7 +276,6 @@ module spoke1RouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: spoke1RouteTableName
-    routes: spoke1SubnetRouteTableRoutes
   }
   dependsOn: [
     spoke1ResourceGroup
@@ -289,7 +288,6 @@ module spoke2RouteTable 'modules/routeTable.bicep' = {
   params: {
     location: location
     routeTableName: spoke2RouteTableName
-    routes: spoke2SubnetRouteTableRoutes
   }
   dependsOn: [
     spoke2ResourceGroup
@@ -306,6 +304,9 @@ module spoke1SubnetRouteTableRoutesConf 'modules/routetableroute.bicep' = {
     routeName: spoke1SubnetRouteTableRoutes[0].name
     routeTableName: spoke1RouteTableName
   }
+  dependsOn: [
+    spoke1RouteTable
+  ]
 }
 
 
@@ -465,7 +466,7 @@ module spoke1LinuxVM2 'modules/virtualmachine.bicep' = {
     adminUsername: adminUsername
     adminPassword: adminPassword
     subnetId: spoke1Vnet.outputs.subnets[0].id
-    privateIpAddress: '10.0.20.4'
+    privateIpAddress: '10.0.20.5'
     publicIpId: linux2PublicIp.outputs.ipId
     publisher: linuxPublisher
     offer: linuxOffer
