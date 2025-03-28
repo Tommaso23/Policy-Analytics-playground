@@ -252,7 +252,7 @@ module spoke2ToHubPeering 'modules/vnetPeering.bicep' = {
 // NSG //
 module spoke1Nsg 'modules/networkSecurityGroup.bicep' = {
   name: 'spoke1Nsg'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(spoke1RgName)
   params: {
     location: location
     name: 'nsg-spoke1-in'
@@ -261,7 +261,7 @@ module spoke1Nsg 'modules/networkSecurityGroup.bicep' = {
 
 module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
   name: 'spoke2Nsg'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(spoke2RgName)
   params: {
     location: location
     name: 'nsg-spoke2-in'
@@ -272,7 +272,7 @@ module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
 // ROUTE TABLES and ROUTES //
 module spoke1RouteTable 'modules/routeTable.bicep' = {
   name: 'Spoke1RouteTable'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(spoke1RgName)
   params: {
     location: location
     routeTableName: spoke1RouteTableName
@@ -285,7 +285,7 @@ module spoke1RouteTable 'modules/routeTable.bicep' = {
 
 module spoke2RouteTable 'modules/routeTable.bicep' = {
   name: 'Spoke2RouteTable'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(spoke2RgName)
   params: {
     location: location
     routeTableName: spoke2RouteTableName
