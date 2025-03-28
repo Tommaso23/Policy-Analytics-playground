@@ -296,6 +296,20 @@ module spoke2RouteTable 'modules/routeTable.bicep' = {
   ]
 }
 
+module spoke1SubnetRouteTableRoutesConf 'modules/routetableroute.bicep' = {
+  name: 'spoke1SubnetRouteTableRoutesConf'
+  scope: resourceGroup(spoke1RgName)
+  params: {
+    addressPrefix: spoke1SubnetRouteTableRoutes[0].properties.addressPrefix
+    nextHopType: spoke1SubnetRouteTableRoutes[0].properties.nextHopType
+    nextHopIp: spoke1SubnetRouteTableRoutes[0].properties.nextHopIpAddress
+    routeName: spoke1SubnetRouteTableRoutes[0].name
+    routeTableName: spoke1RouteTableName
+  }
+}
+
+
+
 // FIREWALL //
 module azureFirewallPublicIp 'modules/publicIp.bicep' = {
   name: 'azureFirewallPublicIp'
