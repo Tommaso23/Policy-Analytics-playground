@@ -40,7 +40,7 @@ var linux2PublicIpName = 'pip-${linux2ComputerName}'
 
 var windowsPublisher = 'MicrosoftWindowsServer'
 var windowsOffer = 'WindowsServer'
-var windowsSku = '2022-Datacenter-gensecond'
+var windowsSku = '2022-Datacenter-azure-edition'
 
 var linuxPublisher = 'canonical'
 var linuxOffer = 'ubuntu-24_04-lts'
@@ -55,6 +55,13 @@ var spokeVmIISExtensionProperties = {
     commandToExecute: 'powershell.exe Add-WindowsFeature Web-Server; powershell.exe New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation Cert:\\LocalMachine\\My; powershell.exe Import-Module IISAdministration; powershell.exe New-IISSite -Name "Default Web Site" -PhysicalPath "C:\\inetpub\\wwwroot" -BindingInformation "*:443:" -CertificateStoreName "My" -CertificateHash (Get-ChildItem Cert:\\LocalMachine\\My | Where-Object {$_.Subject -match "CN=localhost"}).Thumbprint; powershell.exe Add-Content -Path "C:\\inetpub\\wwwroot\\Default.htm" -Value $($env:computername); powershell.exe Set-NetFirewallProfile -Enabled False'
   }
 }
+commandToExecute: '[concat("powershell.exe -Command \"", 
+    "New-SelfSignedCertificate -DnsName 'localhost' -CertStoreLocation 'cert:\\LocalMachine\\My'; ",
+    "$thumbprint = (Get-ChildItem -Path cert:\\LocalMachine\\My | Where-Object { $_.Subject -match 'CN=localhost' }).Thumbprint; ",
+    "New-WebBinding -Name 'Default Web Site' -Protocol 'https' -Port 443 -SslFlags 1; ",
+    "Get-Item 'IIS:\\SslBindings\\0.0.0.0!443' | New-Item -Type Binding -Value $thumbprint; ",
+    "Restart-WebAppPool -Name 'DefaultAppPool'; ",
+    "Start-Service W3SVC\"") ]'
 
 var hubSubnet = {
   subnetAddrPrefix: hubSubnetAddrPrefix
