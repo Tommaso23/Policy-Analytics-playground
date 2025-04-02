@@ -52,16 +52,9 @@ var spokeVmIISExtensionProperties = {
   typeHandlerVersion: '1.10'
   autoUpgradeMinorVersion: true
   protectedSettings: {
-    commandToExecute: 'powershell.exe Add-WindowsFeature Web-Server; powershell.exe New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation Cert:\\LocalMachine\\My; powershell.exe Import-Module IISAdministration; powershell.exe New-IISSite -Name "Default Web Site" -PhysicalPath "C:\\inetpub\\wwwroot" -BindingInformation "*:443:" -CertificateStoreName "My" -CertificateHash (Get-ChildItem Cert:\\LocalMachine\\My | Where-Object {$_.Subject -match "CN=localhost"}).Thumbprint; powershell.exe Add-Content -Path "C:\\inetpub\\wwwroot\\Default.htm" -Value $($env:computername); powershell.exe Set-NetFirewallProfile -Enabled False'
+    commandToExecute: 'powershell.exe Add-WindowsFeature Web-Server; powershell Add-Content -Path "C:\\inetpub\\wwwroot\\Default.htm" -Value $($env:computername); powershell Set-NetFirewallProfile -Enabled False'
   }
 }
-commandToExecute: '[concat("powershell.exe -Command \"", 
-    "New-SelfSignedCertificate -DnsName 'localhost' -CertStoreLocation 'cert:\\LocalMachine\\My'; ",
-    "$thumbprint = (Get-ChildItem -Path cert:\\LocalMachine\\My | Where-Object { $_.Subject -match 'CN=localhost' }).Thumbprint; ",
-    "New-WebBinding -Name 'Default Web Site' -Protocol 'https' -Port 443 -SslFlags 1; ",
-    "Get-Item 'IIS:\\SslBindings\\0.0.0.0!443' | New-Item -Type Binding -Value $thumbprint; ",
-    "Restart-WebAppPool -Name 'DefaultAppPool'; ",
-    "Start-Service W3SVC\"") ]'
 
 var hubSubnet = {
   subnetAddrPrefix: hubSubnetAddrPrefix
@@ -107,7 +100,7 @@ var spoke1SubnetRouteTableRoutes = [
   {
     name: 'fwpip-via-internet'
     properties: {
-      addressPrefix: azureFirewallPublicIp.outputs.ipAddress
+      addressPrefix: '${azureFirewallPublicIp.outputs.ipAddress}/32'
       nextHopType: 'Internet'
     }
   }
@@ -328,6 +321,21 @@ module spoke1SubnetRouteTableRoutesConf2 'modules/routetableroute.bicep' = {
   }
   dependsOn: [
     spoke1RouteTable
+  ]
+}
+
+module spoke2SubnetRouteTableRoutesConf 'modules/routetableroute.bicep' = {
+  name: 'spoke2SubnetRouteTableRoutesConf'
+  scope: resourceGroup(spoke2RgName)
+  params: {
+    addressPrefix: spoke2SubnetRouteTableRoutes[0].properties.addressPrefix
+    nextHopType: spoke2SubnetRouteTableRoutes[0].properties.nextHopType
+    nextHopIp: spoke2SubnetRouteTableRoutes[0].properties.nextHopIpAddress
+    routeName: spoke2SubnetRouteTableRoutes[0].name
+    routeTableName: spoke2RouteTableName
+  }
+  dependsOn: [
+    spoke2RouteTable
   ]
 }
 

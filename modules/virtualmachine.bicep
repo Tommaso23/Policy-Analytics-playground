@@ -71,10 +71,6 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-07-01' = {
       computerName: computerName
       adminUsername: adminUsername
       adminPassword: adminPassword
-      windowsConfiguration: {
-        enableAutomaticUpdates: true
-        provisionVMAgent: true
-      }
     }
   }
 }
