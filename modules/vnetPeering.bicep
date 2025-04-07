@@ -6,7 +6,7 @@ resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-
   name: '${sourceVnetName}/${peeringName}'
   properties: {
     allowVirtualNetworkAccess: true
-    allowForwardedTraffic: true
+    allowForwardedTraffic: false
     allowGatewayTransit: false
     remoteVirtualNetwork: {
       id: destinationVnetId
