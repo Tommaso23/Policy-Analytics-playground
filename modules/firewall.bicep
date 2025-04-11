@@ -1,26 +1,12 @@
-param fwPolicyName string
 param location string
 param fwName string
 param subnetId string
 param publicIpId string
-param fwTier string
-
-
-resource firewallPolicy 'Microsoft.Network/firewallPolicies@2022-05-01' = {
-  name: fwPolicyName
-  location: location
-  properties: {
-    sku: {
-      tier: fwTier
-    }
-    threatIntelMode: 'Alert'
-  }
-}
-
+param firewallPolicyId string
 
 resource firewall 'Microsoft.Network/azureFirewalls@2024-03-01' = {
   name: fwName
-  location: 'italynorth'
+  location: location
   zones: [
     '1'
     '2'
@@ -46,7 +32,7 @@ resource firewall 'Microsoft.Network/azureFirewalls@2024-03-01' = {
       }
     ]    
     firewallPolicy: {
-      id: firewallPolicy.id
+      id: firewallPolicyId
     }
   }
 }

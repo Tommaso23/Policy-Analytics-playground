@@ -4,7 +4,8 @@ param spokeToInternetRuleCollectionGroupName string = 'rcg-spokeToInternet'
 param spokeToDCRuleCollectionGroupName string = 'rcg-spokeToDC'
 param DNATRuleCollectionGroupName string = 'rcg-dnat'
 param spokeToInternetDuplicatedRuleCollectionGroupName string = 'rcg-spokeToInternetDuplicated'
-
+param location string = resourceGroup().location
+param fwTier string 
 
 var dnatRuleCollections = [
   {
@@ -673,7 +674,6 @@ var spokeToInternetDuplicatedRuleCollections = [
   }
 ]
 
-
 var spokeToInternetRuleCollections = [
   {
     name: 'rc-spoke1ToInternet'
@@ -1050,7 +1050,6 @@ var spokeToInternetRuleCollections = [
 ]
 
 
-
 resource DNATRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
   name: '${fwPolicyName}/${DNATRuleCollectionGroupName}'
   properties: {
@@ -1102,3 +1101,16 @@ resource spokeToInternetDuplicatedRuleCollectionGroup 'Microsoft.Network/firewal
     ruleCollections: spokeToInternetDuplicatedRuleCollections
   }
 }
+
+resource firewallPolicy 'Microsoft.Network/firewallPolicies@2022-05-01' = {
+  name: fwPolicyName
+  location: location
+  properties: {
+    sku: {
+      tier: fwTier
+    }
+    threatIntelMode: 'Alert'
+  }
+}
+
+output fwPolicyId string = firewallPolicy.id

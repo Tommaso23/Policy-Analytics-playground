@@ -46,6 +46,8 @@ var linuxPublisher = 'canonical'
 var linuxOffer = 'ubuntu-24_04-lts'
 var linuxSku = 'server'
 
+
+
 var spokeVmIISExtensionProperties = {
   publisher: 'Microsoft.Compute'
   type: 'CustomScriptExtension'
@@ -86,7 +88,7 @@ var spoke2RouteTableName = 'rt-spoke2-vnet'
 /*FIREWALL*/
 var firewallName = 'afw-hub-itn'
 var fwTier = 'Premium'
-var fwPolicyName = 'afw-policy-hub-itn'
+
 
 var spoke1SubnetRouteTableRoutes = [
   {
@@ -357,12 +359,12 @@ module azureFirewall 'modules/firewall.bicep' = {
   name: 'azureFirewall'
   scope: resourceGroup(hubRgName)
   params: {
-    location: 'italynorth'
+    location: location
     fwName: firewallName
-    fwPolicyName: fwPolicyName
     publicIpId: azureFirewallPublicIp.outputs.ipId
     subnetId: hubVnet.outputs.subnets[0].id
-    fwTier: fwTier
+    firewallPolicyId: firewallPolicy.outputs.fwPolicyId
+
   }
   dependsOn: [
     hubResourceGroup
@@ -371,7 +373,14 @@ module azureFirewall 'modules/firewall.bicep' = {
   ]
 }
 
-
+module firewallPolicy 'modules/fwPolicy.bicep' = {
+  name: 'fwPolicyName'
+  scope: resourceGroup(hubRgName)
+  params: {
+    location: location
+    fwTier: fwTier
+  }
+}
 
 module IIS1 'modules/virtualmachine.bicep' = {
   name: 'IIS-1'
