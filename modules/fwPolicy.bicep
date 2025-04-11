@@ -136,6 +136,7 @@ var dnatRuleCollections = [
       }
     ]
   }
+  /*
   {
     name: 'rc-identitydnat'
     priority: 300
@@ -182,6 +183,7 @@ var dnatRuleCollections = [
       }
     ]
   }
+  */
 ]
 
 var spokeToSpokeRuleCollections = [
@@ -1048,7 +1050,6 @@ var spokeToInternetRuleCollections = [
     ]
   }
 ]
-
 
 resource DNATRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
   name: '${fwPolicyName}/${DNATRuleCollectionGroupName}'

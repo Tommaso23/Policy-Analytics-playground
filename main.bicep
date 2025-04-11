@@ -9,11 +9,11 @@ var spoke2RgName = 'rg-spoke2-itn'
 var automationRgName = 'rg-automation-itn'
 
 /*VNET*/
-var hubVnetName = 'vnet-hub-itn'
-var spoke1VnetName = 'vnet-spoke1-itn'
-var spoke2VnetName = 'vnet-spoke2-itn'
+var hubVnetName = 'vnet-hub-itn' //hub
+var spoke1VnetName = 'vnet-spoke1-itn' //linux
+var spoke2VnetName = 'vnet-spoke2-itn' //windows
 
-var hubVnetAddrPrefix = ['10.0.10.0/24']
+var hubVnetAddrPrefix = ['10.0.10.0/24'] 
 var spoke1VnetAddrPrefix = ['10.0.20.0/24']
 var spoke2VnetAddrPrefix = ['10.0.30.0/24']
 
