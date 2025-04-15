@@ -4,8 +4,8 @@ param spokeToInternetRuleCollectionGroupName string = 'rcg-spokeToInternet'
 param spokeToDCRuleCollectionGroupName string = 'rcg-spokeToDC'
 param DNATRuleCollectionGroupName string = 'rcg-dnat'
 param spokeToInternetDuplicatedRuleCollectionGroupName string = 'rcg-spokeToInternetDuplicated'
-param location string = resourceGroup().location
-param fwTier string 
+param location string
+param fwTier string
 
 var dnatRuleCollections = [
   {

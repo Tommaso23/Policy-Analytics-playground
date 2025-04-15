@@ -374,7 +374,7 @@ module azureFirewall 'modules/firewall.bicep' = {
 }
 
 module firewallPolicy 'modules/fwPolicy.bicep' = {
-  name: 'fwPolicyName'
+  name: 'fwPolicy'
   scope: resourceGroup(hubRgName)
   params: {
     location: location
