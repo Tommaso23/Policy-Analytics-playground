@@ -123,7 +123,7 @@ var spoke2SubnetRouteTableRoutes = [
 
 // RESOURCE GROUPS //
 module hubResourceGroup 'modules/resourceGroup.bicep' = {
-  name: 'HubResourceGroup'
+  name: 'hubResourceGroup'
   params: {
     location: location
     rgName: hubRgName
@@ -259,6 +259,9 @@ module spoke1Nsg 'modules/networkSecurityGroup.bicep' = {
     location: location
     name: 'nsg-spoke1-in'
   }
+  dependsOn: [
+    spoke1ResourceGroup
+  ]
 }
 
 module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
@@ -268,6 +271,9 @@ module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
     location: location
     name: 'nsg-spoke2-in'
   }
+  dependsOn: [
+    spoke2ResourceGroup
+  ]
 }
 
 
@@ -374,12 +380,15 @@ module azureFirewall 'modules/firewall.bicep' = {
 }
 
 module firewallPolicy 'modules/fwPolicy.bicep' = {
-  name: 'fwPolicy'
+  name: 'firewallPolicy'
   scope: resourceGroup(hubRgName)
   params: {
     location: location
     fwTier: fwTier
   }
+  dependsOn: [
+    hubResourceGroup
+  ]
 }
 
 module IIS1 'modules/virtualmachine.bicep' = {
