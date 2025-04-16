@@ -2,7 +2,19 @@ param location string
 param fwName string
 param subnetId string
 param publicIpId string
-param firewallPolicyId string
+param fwPolicyName string
+param fwTier string
+
+resource firewallPolicy 'Microsoft.Network/firewallPolicies@2022-05-01' = {
+  name: fwPolicyName
+  location: location
+  properties: {
+    sku: {
+      tier: fwTier
+    }
+    threatIntelMode: 'Alert'
+  }
+}
 
 resource firewall 'Microsoft.Network/azureFirewalls@2024-03-01' = {
   name: fwName
@@ -32,9 +44,10 @@ resource firewall 'Microsoft.Network/azureFirewalls@2024-03-01' = {
       }
     ]    
     firewallPolicy: {
-      id: firewallPolicyId
+      id: firewallPolicy.id
     }
   }
 }
 
 output firewallPrivateIp string = firewall.properties.ipConfigurations[0].properties.privateIPAddress
+

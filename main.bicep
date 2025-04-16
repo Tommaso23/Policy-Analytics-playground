@@ -88,7 +88,7 @@ var spoke2RouteTableName = 'rt-spoke2-vnet'
 /*FIREWALL*/
 var firewallName = 'afw-hub-itn'
 var fwTier = 'Premium'
-
+var fwPolicyName = 'afwp-hub-demo'
 
 var spoke1SubnetRouteTableRoutes = [
   {
@@ -367,10 +367,10 @@ module azureFirewall 'modules/firewall.bicep' = {
   params: {
     location: location
     fwName: firewallName
+    fwPolicyName: fwPolicyName
     publicIpId: azureFirewallPublicIp.outputs.ipId
     subnetId: hubVnet.outputs.subnets[0].id
-    firewallPolicyId: firewallPolicy.outputs.fwPolicyId
-
+    fwTier: fwTier
   }
   dependsOn: [
     hubResourceGroup
@@ -379,15 +379,14 @@ module azureFirewall 'modules/firewall.bicep' = {
   ]
 }
 
-module firewallPolicy 'modules/fwPolicy.bicep' = {
-  name: 'firewallPolicy'
+module firewallCollectionGroups 'modules/fwCollectionGroups.bicep' = {
+  name: 'firewallCollectionGroups'
   scope: resourceGroup(hubRgName)
   params: {
-    location: location
-    fwTier: fwTier
+    firewallPublicIp: azureFirewallPublicIp.outputs.ipAddress 
   }
   dependsOn: [
-    hubResourceGroup
+    azureFirewall
   ]
 }
 

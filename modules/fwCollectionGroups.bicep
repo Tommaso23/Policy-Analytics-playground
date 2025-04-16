@@ -4,8 +4,7 @@ param spokeToInternetRuleCollectionGroupName string = 'rcg-spokeToInternet'
 param spokeToDCRuleCollectionGroupName string = 'rcg-spokeToDC'
 param DNATRuleCollectionGroupName string = 'rcg-dnat'
 param spokeToInternetDuplicatedRuleCollectionGroupName string = 'rcg-spokeToInternetDuplicated'
-param location string
-param fwTier string
+param firewallPublicIp string
 
 var dnatRuleCollections = [
   {
@@ -25,7 +24,7 @@ var dnatRuleCollections = [
           '*'
         ]
         destinationAddresses: [
-          '72.146.64.19'
+          firewallPublicIp
         ]
         destinationPorts: [
           '22'
@@ -43,7 +42,7 @@ var dnatRuleCollections = [
           '*'
         ]
         destinationAddresses: [
-          '72.146.64.19'
+            firewallPublicIp
         ]
         destinationPorts: [
           '23'
@@ -71,7 +70,7 @@ var dnatRuleCollections = [
           '*'
         ]
         destinationAddresses: [
-          '72.146.64.19'
+          firewallPublicIp
         ]
         destinationPorts: [
           '3389'
@@ -89,7 +88,7 @@ var dnatRuleCollections = [
           '*'
         ]
         destinationAddresses: [
-          '72.146.64.19'
+          firewallPublicIp
         ]
         destinationPorts: [
           '3390'
@@ -107,7 +106,7 @@ var dnatRuleCollections = [
           '*'
         ]
         destinationAddresses: [
-          '72.146.64.19'
+          firewallPublicIp
         ]
         destinationPorts: [
           '443'
@@ -125,7 +124,7 @@ var dnatRuleCollections = [
           '*'
         ]
         destinationAddresses: [
-          '72.146.64.19'
+          firewallPublicIp
         ]
         destinationPorts: [
           '8443'
@@ -1103,15 +1102,4 @@ resource spokeToInternetDuplicatedRuleCollectionGroup 'Microsoft.Network/firewal
   }
 }
 
-resource firewallPolicy 'Microsoft.Network/firewallPolicies@2022-05-01' = {
-  name: fwPolicyName
-  location: location
-  properties: {
-    sku: {
-      tier: fwTier
-    }
-    threatIntelMode: 'Alert'
-  }
-}
 
-output fwPolicyId string = firewallPolicy.id
