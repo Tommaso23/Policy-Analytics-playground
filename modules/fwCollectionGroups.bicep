@@ -147,6 +147,7 @@ var spokeToSpokeRuleCollections = [
     }
     rules: [
       {
+        
         ruleType: 'NetworkRule'
         name: 'https-win'
         destinationAddresses: [
