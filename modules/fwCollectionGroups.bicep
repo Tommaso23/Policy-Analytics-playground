@@ -135,54 +135,6 @@ var dnatRuleCollections = [
       }
     ]
   }
-  /*
-  {
-    name: 'rc-identitydnat'
-    priority: 300
-    ruleCollectionType: 'FirewallPolicyNatRuleCollection'
-    action: {
-      type: 'Dnat'
-    }
-    rules: [
-      {
-        ruleType: 'NatRule'
-        name: 'rdp-dc'
-        translatedAddress: '10.0.20.4'
-        translatedPort: '3389'
-        sourceAddresses: [
-          '*'
-        ]
-        destinationAddresses: [
-          '72.146.64.19'
-        ]
-        destinationPorts: [
-          '3391'
-        ]
-        ipProtocols: [
-          'TCP'
-        ]
-      }
-      {
-        ruleType: 'NatRule'
-        name: 'rdp-dc-dup'
-        translatedAddress: '10.0.20.4'
-        translatedPort: '3389'
-        sourceAddresses: [
-          '*'
-        ]
-        destinationAddresses: [
-          '72.146.64.19'
-        ]
-        destinationPorts: [
-          '3391'
-        ]
-        ipProtocols: [
-          'TCP'
-        ]
-      }
-    ]
-  }
-  */
 ]
 
 var spokeToSpokeRuleCollections = [
