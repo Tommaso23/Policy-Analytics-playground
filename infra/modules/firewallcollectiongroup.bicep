@@ -988,6 +988,9 @@ resource spokeToSpokeRuleCollectionGroup 'Microsoft.Network/firewallPolicies/rul
     priority: 2000
     ruleCollections: spokeToSpokeRuleCollections
   }
+  dependsOn: [
+    DNATRuleCollectionGroup
+  ]
 }
 
 resource spokeToInternetRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
@@ -996,6 +999,9 @@ resource spokeToInternetRuleCollectionGroup 'Microsoft.Network/firewallPolicies/
     priority: 4000
     ruleCollections: spokeToInternetRuleCollections
   }
+  dependsOn: [
+    spokeToSpokeRuleCollectionGroup
+  ]
 }
 
 resource spokeToInternetDuplicatedRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
@@ -1004,6 +1010,9 @@ resource spokeToInternetDuplicatedRuleCollectionGroup 'Microsoft.Network/firewal
     priority: 5000
     ruleCollections: spokeToInternetDuplicatedRuleCollections
   }
+  dependsOn: [
+    spokeToInternetRuleCollectionGroup
+  ]
 }
 
 
