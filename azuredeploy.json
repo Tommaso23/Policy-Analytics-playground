@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "13728258432076874299"
+      "templateHash": "10725698779255708435"
     }
   },
   "parameters": {
@@ -1551,7 +1551,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.1.42791",
-              "templateHash": "13234781701959795059"
+              "templateHash": "11438529182581401653"
             }
           },
           "parameters": {
@@ -2305,7 +2305,10 @@
               "properties": {
                 "priority": 2000,
                 "ruleCollections": "[variables('spokeToSpokeRuleCollections')]"
-              }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), variables('DNATRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), variables('DNATRuleCollectionGroupName')), '/')[1])]"
+              ]
             },
             {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
@@ -2314,7 +2317,10 @@
               "properties": {
                 "priority": 4000,
                 "ruleCollections": "[variables('spokeToInternetRuleCollections')]"
-              }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), variables('spokeToSpokeRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), variables('spokeToSpokeRuleCollectionGroupName')), '/')[1])]"
+              ]
             },
             {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
@@ -2323,7 +2329,10 @@
               "properties": {
                 "priority": 5000,
                 "ruleCollections": "[variables('spokeToInternetDuplicatedRuleCollections')]"
-              }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), variables('spokeToInternetRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), variables('spokeToInternetRuleCollectionGroupName')), '/')[1])]"
+              ]
             }
           ]
         }
