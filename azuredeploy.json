@@ -1,0 +1,3701 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.36.1.42791",
+      "templateHash": "16935393790474418189"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[deployment().location]"
+    },
+    "workloadName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the workload"
+      }
+    },
+    "locationAlias": {
+      "type": "string",
+      "metadata": {
+        "description": "Alias for the location, used to create unique resource names."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "username administrator for all VMs"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "username administrator password for all VMs"
+      }
+    }
+  },
+  "variables": {
+    "hubRgName": "[format('rg-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "spoke1RgName": "[format('rg-spoke1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "spoke2RgName": "[format('rg-spoke2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "automationRgName": "[format('rg-automation-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "hubVnetName": "[format('vnet-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "spoke1VnetName": "[format('vnet-spoke1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "spoke2VnetName": "[format('vnet-spoke2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "hubVnetAddrPrefix": [
+      "10.0.10.0/24"
+    ],
+    "spoke1VnetAddrPrefix": [
+      "10.0.20.0/24"
+    ],
+    "spoke2VnetAddrPrefix": [
+      "10.0.30.0/24"
+    ],
+    "hubSubnetAddrPrefix": "10.0.10.0/26",
+    "linuxSubnetAddrPrefix": "10.0.20.0/27",
+    "winSubnetAddrPrefix": "10.0.30.0/27",
+    "IIS1ComputerName": "[format('vm-iis1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "IIS2ComputerName": "[format('vm-iis2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "linux1ComputerName": "[format('vm-lnx-1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "linux2ComputerName": "[format('vm-lnx-2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "linux1PublicIpName": "[format('pip-{0}', variables('linux1ComputerName'))]",
+    "linux2PublicIpName": "[format('pip-{0}', variables('linux2ComputerName'))]",
+    "windowsPublisher": "MicrosoftWindowsServer",
+    "windowsOffer": "WindowsServer",
+    "windowsSku": "2022-Datacenter-azure-edition",
+    "linuxPublisher": "canonical",
+    "linuxOffer": "ubuntu-24_04-lts",
+    "linuxSku": "server",
+    "spokeVmIISExtensionProperties": {
+      "publisher": "Microsoft.Compute",
+      "type": "CustomScriptExtension",
+      "typeHandlerVersion": "1.10",
+      "autoUpgradeMinorVersion": true,
+      "protectedSettings": {
+        "commandToExecute": "powershell.exe Add-WindowsFeature Web-Server; powershell Add-Content -Path \"C:\\inetpub\\wwwroot\\Default.htm\" -Value $($env:computername); powershell Set-NetFirewallProfile -Enabled False"
+      }
+    },
+    "hubSubnet": {
+      "subnetAddrPrefix": "[variables('hubSubnetAddrPrefix')]",
+      "subnetName": "AzureFirewallSubnet",
+      "vnetName": "[variables('hubVnetName')]",
+      "nsgId": "",
+      "routeTableId": ""
+    },
+    "spoke1RouteTableName": "rt-spoke1-vnet",
+    "spoke2RouteTableName": "rt-spoke2-vnet",
+    "firewallName": "[format('afw-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "fwTier": "Premium",
+    "fwPolicyName": "[format('afwp-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "hubResourceGroup",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "rgName": {
+            "value": "[variables('hubRgName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "2338463022714296664"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "rgName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-11-01",
+              "name": "[parameters('rgName')]",
+              "location": "[parameters('location')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1ResourceGroup",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "rgName": {
+            "value": "[variables('spoke1RgName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "2338463022714296664"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "rgName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-11-01",
+              "name": "[parameters('rgName')]",
+              "location": "[parameters('location')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke2ResourceGroup",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "rgName": {
+            "value": "[variables('spoke2RgName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "2338463022714296664"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "rgName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-11-01",
+              "name": "[parameters('rgName')]",
+              "location": "[parameters('location')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "automationResourceGroup",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "rgName": {
+            "value": "[variables('automationRgName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "2338463022714296664"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "rgName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-11-01",
+              "name": "[parameters('rgName')]",
+              "location": "[parameters('location')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "hubVnet",
+      "resourceGroup": "[variables('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vnetName": {
+            "value": "[variables('hubVnetName')]"
+          },
+          "vnetAddrPrefix": {
+            "value": "[variables('hubVnetAddrPrefix')]"
+          },
+          "subnets": {
+            "value": [
+              "[variables('hubSubnet')]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "3959698566267556164"
+            }
+          },
+          "parameters": {
+            "vnetName": {
+              "type": "string"
+            },
+            "vnetAddrPrefix": {
+              "type": "array"
+            },
+            "location": {
+              "type": "string"
+            },
+            "subnets": {
+              "type": "array"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2019-11-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "subnets",
+                    "count": "[length(parameters('subnets'))]",
+                    "input": {
+                      "name": "[parameters('subnets')[copyIndex('subnets')].subnetName]",
+                      "properties": {
+                        "addressPrefix": "[parameters('subnets')[copyIndex('subnets')].subnetAddrPrefix]",
+                        "networkSecurityGroup": "[if(equals(parameters('subnets')[copyIndex('subnets')].nsgId, ''), null(), createObject('id', parameters('subnets')[copyIndex('subnets')].nsgId))]",
+                        "routeTable": "[if(equals(parameters('subnets')[copyIndex('subnets')].routeTableId, ''), null(), createObject('id', parameters('subnets')[copyIndex('subnets')].routeTableId))]"
+                      }
+                    }
+                  }
+                ],
+                "addressSpace": {
+                  "addressPrefixes": "[parameters('vnetAddrPrefix')]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            },
+            "subnets": {
+              "type": "array",
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2019-11-01').subnets]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'hubResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1Vnet",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vnetName": {
+            "value": "[variables('spoke1VnetName')]"
+          },
+          "vnetAddrPrefix": {
+            "value": "[variables('spoke1VnetAddrPrefix')]"
+          },
+          "subnets": {
+            "value": [
+              {
+                "subnetAddrPrefix": "[variables('linuxSubnetAddrPrefix')]",
+                "subnetName": "snet-linux-vms",
+                "nsgId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Nsg'), '2022-09-01').outputs.nsgId.value]",
+                "routeTableId": ""
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "3959698566267556164"
+            }
+          },
+          "parameters": {
+            "vnetName": {
+              "type": "string"
+            },
+            "vnetAddrPrefix": {
+              "type": "array"
+            },
+            "location": {
+              "type": "string"
+            },
+            "subnets": {
+              "type": "array"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2019-11-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "subnets",
+                    "count": "[length(parameters('subnets'))]",
+                    "input": {
+                      "name": "[parameters('subnets')[copyIndex('subnets')].subnetName]",
+                      "properties": {
+                        "addressPrefix": "[parameters('subnets')[copyIndex('subnets')].subnetAddrPrefix]",
+                        "networkSecurityGroup": "[if(equals(parameters('subnets')[copyIndex('subnets')].nsgId, ''), null(), createObject('id', parameters('subnets')[copyIndex('subnets')].nsgId))]",
+                        "routeTable": "[if(equals(parameters('subnets')[copyIndex('subnets')].routeTableId, ''), null(), createObject('id', parameters('subnets')[copyIndex('subnets')].routeTableId))]"
+                      }
+                    }
+                  }
+                ],
+                "addressSpace": {
+                  "addressPrefixes": "[parameters('vnetAddrPrefix')]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            },
+            "subnets": {
+              "type": "array",
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2019-11-01').subnets]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Nsg')]",
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke1ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke2Vnet",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vnetName": {
+            "value": "[variables('spoke2VnetName')]"
+          },
+          "vnetAddrPrefix": {
+            "value": "[variables('spoke2VnetAddrPrefix')]"
+          },
+          "subnets": {
+            "value": [
+              {
+                "subnetAddrPrefix": "[variables('winSubnetAddrPrefix')]",
+                "subnetName": "snet-win-vms",
+                "nsgId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Nsg'), '2022-09-01').outputs.nsgId.value]",
+                "routeTableId": ""
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "3959698566267556164"
+            }
+          },
+          "parameters": {
+            "vnetName": {
+              "type": "string"
+            },
+            "vnetAddrPrefix": {
+              "type": "array"
+            },
+            "location": {
+              "type": "string"
+            },
+            "subnets": {
+              "type": "array"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2019-11-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "subnets",
+                    "count": "[length(parameters('subnets'))]",
+                    "input": {
+                      "name": "[parameters('subnets')[copyIndex('subnets')].subnetName]",
+                      "properties": {
+                        "addressPrefix": "[parameters('subnets')[copyIndex('subnets')].subnetAddrPrefix]",
+                        "networkSecurityGroup": "[if(equals(parameters('subnets')[copyIndex('subnets')].nsgId, ''), null(), createObject('id', parameters('subnets')[copyIndex('subnets')].nsgId))]",
+                        "routeTable": "[if(equals(parameters('subnets')[copyIndex('subnets')].routeTableId, ''), null(), createObject('id', parameters('subnets')[copyIndex('subnets')].routeTableId))]"
+                      }
+                    }
+                  }
+                ],
+                "addressSpace": {
+                  "addressPrefixes": "[parameters('vnetAddrPrefix')]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            },
+            "subnets": {
+              "type": "array",
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')), '2019-11-01').subnets]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Nsg')]",
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke2ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "hubToSpoke1Peering",
+      "resourceGroup": "[variables('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "peeringName": {
+            "value": "hubToSpoke1"
+          },
+          "sourceVnetName": {
+            "value": "[variables('hubVnetName')]"
+          },
+          "destinationVnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet'), '2022-09-01').outputs.vnetId.value]"
+          },
+          "allowForwardedTraffic": {
+            "value": false
+          },
+          "allowGatewayTransit": {
+            "value": true
+          },
+          "useRemoteGateways": {
+            "value": false
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "10059936399583202073"
+            }
+          },
+          "parameters": {
+            "peeringName": {
+              "type": "string"
+            },
+            "sourceVnetName": {
+              "type": "string"
+            },
+            "destinationVnetId": {
+              "type": "string"
+            },
+            "allowForwardedTraffic": {
+              "type": "bool"
+            },
+            "allowGatewayTransit": {
+              "type": "bool"
+            },
+            "useRemoteGateways": {
+              "type": "bool"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('sourceVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]",
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('destinationVnetId')]"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "hubToSpoke2Peering",
+      "resourceGroup": "[variables('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "peeringName": {
+            "value": "hubToSpoke2"
+          },
+          "sourceVnetName": {
+            "value": "[variables('hubVnetName')]"
+          },
+          "destinationVnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Vnet'), '2022-09-01').outputs.vnetId.value]"
+          },
+          "allowForwardedTraffic": {
+            "value": false
+          },
+          "allowGatewayTransit": {
+            "value": true
+          },
+          "useRemoteGateways": {
+            "value": false
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "10059936399583202073"
+            }
+          },
+          "parameters": {
+            "peeringName": {
+              "type": "string"
+            },
+            "sourceVnetName": {
+              "type": "string"
+            },
+            "destinationVnetId": {
+              "type": "string"
+            },
+            "allowForwardedTraffic": {
+              "type": "bool"
+            },
+            "allowGatewayTransit": {
+              "type": "bool"
+            },
+            "useRemoteGateways": {
+              "type": "bool"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('sourceVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]",
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('destinationVnetId')]"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1ToHubPeering",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "peeringName": {
+            "value": "spoke1ToHub"
+          },
+          "sourceVnetName": {
+            "value": "[variables('spoke1VnetName')]"
+          },
+          "destinationVnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet'), '2022-09-01').outputs.vnetId.value]"
+          },
+          "allowForwardedTraffic": {
+            "value": true
+          },
+          "allowGatewayTransit": {
+            "value": false
+          },
+          "useRemoteGateways": {
+            "value": false
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "10059936399583202073"
+            }
+          },
+          "parameters": {
+            "peeringName": {
+              "type": "string"
+            },
+            "sourceVnetName": {
+              "type": "string"
+            },
+            "destinationVnetId": {
+              "type": "string"
+            },
+            "allowForwardedTraffic": {
+              "type": "bool"
+            },
+            "allowGatewayTransit": {
+              "type": "bool"
+            },
+            "useRemoteGateways": {
+              "type": "bool"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('sourceVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]",
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('destinationVnetId')]"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke2ToHubPeering",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "peeringName": {
+            "value": "spoke2ToHub"
+          },
+          "sourceVnetName": {
+            "value": "[variables('spoke2VnetName')]"
+          },
+          "destinationVnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet'), '2022-09-01').outputs.vnetId.value]"
+          },
+          "allowForwardedTraffic": {
+            "value": true
+          },
+          "allowGatewayTransit": {
+            "value": false
+          },
+          "useRemoteGateways": {
+            "value": false
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "10059936399583202073"
+            }
+          },
+          "parameters": {
+            "peeringName": {
+              "type": "string"
+            },
+            "sourceVnetName": {
+              "type": "string"
+            },
+            "destinationVnetId": {
+              "type": "string"
+            },
+            "allowForwardedTraffic": {
+              "type": "bool"
+            },
+            "allowGatewayTransit": {
+              "type": "bool"
+            },
+            "useRemoteGateways": {
+              "type": "bool"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}/{1}', parameters('sourceVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]",
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('destinationVnetId')]"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1Nsg",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "nsg-spoke1-in"
+          },
+          "securityRules": {
+            "value": []
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "6751687835261702669"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "securityRules": {
+              "type": "array"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2019-11-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "securityRules": "[parameters('securityRules')]"
+              }
+            }
+          ],
+          "outputs": {
+            "nsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('name'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke1ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke2Nsg",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "nsg-spoke2-in"
+          },
+          "securityRules": {
+            "value": []
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "6751687835261702669"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "securityRules": {
+              "type": "array"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2019-11-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "securityRules": "[parameters('securityRules')]"
+              }
+            }
+          ],
+          "outputs": {
+            "nsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('name'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke2ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "Spoke1RouteTable",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "routeTableName": {
+            "value": "[variables('spoke1RouteTableName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "7675833555991687108"
+            }
+          },
+          "parameters": {
+            "routeTableName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/routeTables",
+              "apiVersion": "2022-05-01",
+              "name": "[parameters('routeTableName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "disableBgpRoutePropagation": true
+              }
+            }
+          ],
+          "outputs": {
+            "rtId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/routeTables', parameters('routeTableName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke1ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "Spoke2RouteTable",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "routeTableName": {
+            "value": "[variables('spoke2RouteTableName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "7675833555991687108"
+            }
+          },
+          "parameters": {
+            "routeTableName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/routeTables",
+              "apiVersion": "2022-05-01",
+              "name": "[parameters('routeTableName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "disableBgpRoutePropagation": true
+              }
+            }
+          ],
+          "outputs": {
+            "rtId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/routeTables', parameters('routeTableName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke2ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1SubnetRouteTableRoutesConf",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "addressPrefix": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].properties.addressPrefix]"
+          },
+          "nextHopType": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].properties.nextHopType]"
+          },
+          "nextHopIp": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].properties.nextHopIpAddress]"
+          },
+          "routeName": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].name]"
+          },
+          "routeTableName": {
+            "value": "[variables('spoke1RouteTableName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "15445324184631414803"
+            }
+          },
+          "parameters": {
+            "routeTableName": {
+              "type": "string"
+            },
+            "routeName": {
+              "type": "string"
+            },
+            "addressPrefix": {
+              "type": "string"
+            },
+            "nextHopType": {
+              "type": "string"
+            },
+            "nextHopIp": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/routeTables/routes",
+              "apiVersion": "2019-11-01",
+              "name": "[format('{0}/{1}', parameters('routeTableName'), parameters('routeName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('addressPrefix')]",
+                "nextHopType": "[parameters('nextHopType')]",
+                "nextHopIpAddress": "[parameters('nextHopIp')]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'Spoke1RouteTable')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1SubnetRouteTableRoutesConf2",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "addressPrefix": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[1].properties.addressPrefix]"
+          },
+          "nextHopType": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[1].properties.nextHopType]"
+          },
+          "nextHopIp": {
+            "value": ""
+          },
+          "routeName": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[1].name]"
+          },
+          "routeTableName": {
+            "value": "[variables('spoke1RouteTableName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "15445324184631414803"
+            }
+          },
+          "parameters": {
+            "routeTableName": {
+              "type": "string"
+            },
+            "routeName": {
+              "type": "string"
+            },
+            "addressPrefix": {
+              "type": "string"
+            },
+            "nextHopType": {
+              "type": "string"
+            },
+            "nextHopIp": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/routeTables/routes",
+              "apiVersion": "2019-11-01",
+              "name": "[format('{0}/{1}', parameters('routeTableName'), parameters('routeName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('addressPrefix')]",
+                "nextHopType": "[parameters('nextHopType')]",
+                "nextHopIpAddress": "[parameters('nextHopIp')]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'Spoke1RouteTable')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke2SubnetRouteTableRoutesConf",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "addressPrefix": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].properties.addressPrefix]"
+          },
+          "nextHopType": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].properties.nextHopType]"
+          },
+          "nextHopIp": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].properties.nextHopIpAddress]"
+          },
+          "routeName": {
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].name]"
+          },
+          "routeTableName": {
+            "value": "[variables('spoke2RouteTableName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "15445324184631414803"
+            }
+          },
+          "parameters": {
+            "routeTableName": {
+              "type": "string"
+            },
+            "routeName": {
+              "type": "string"
+            },
+            "addressPrefix": {
+              "type": "string"
+            },
+            "nextHopType": {
+              "type": "string"
+            },
+            "nextHopIp": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/routeTables/routes",
+              "apiVersion": "2019-11-01",
+              "name": "[format('{0}/{1}', parameters('routeTableName'), parameters('routeName'))]",
+              "properties": {
+                "addressPrefix": "[parameters('addressPrefix')]",
+                "nextHopType": "[parameters('nextHopType')]",
+                "nextHopIpAddress": "[parameters('nextHopIp')]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'Spoke2RouteTable')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "azureFirewallPublicIp",
+      "resourceGroup": "[variables('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "publicIpAddressName": {
+            "value": "pip-afw-hub-in"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "2173549090940773050"
+            }
+          },
+          "parameters": {
+            "publicIpAddressName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2024-05-01",
+              "name": "[parameters('publicIpAddressName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              },
+              "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+              },
+              "zones": [
+                "1",
+                "2",
+                "3"
+              ]
+            }
+          ],
+          "outputs": {
+            "ipId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpAddressName'))]"
+            },
+            "ipAddress": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpAddressName')), '2024-05-01').ipAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'hubResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "azureFirewall",
+      "resourceGroup": "[variables('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "fwName": {
+            "value": "[variables('firewallName')]"
+          },
+          "fwPolicyName": {
+            "value": "[variables('fwPolicyName')]"
+          },
+          "publicIpId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipId.value]"
+          },
+          "subnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet'), '2022-09-01').outputs.subnets.value[0].id]"
+          },
+          "fwTier": {
+            "value": "[variables('fwTier')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "9332282431409656213"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "fwName": {
+              "type": "string"
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "publicIpId": {
+              "type": "string"
+            },
+            "fwPolicyName": {
+              "type": "string"
+            },
+            "fwTier": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/firewallPolicies",
+              "apiVersion": "2022-05-01",
+              "name": "[parameters('fwPolicyName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "tier": "[parameters('fwTier')]"
+                },
+                "threatIntelMode": "Alert"
+              }
+            },
+            {
+              "type": "Microsoft.Network/azureFirewalls",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('fwName')]",
+              "location": "[parameters('location')]",
+              "zones": [
+                "1",
+                "2",
+                "3"
+              ],
+              "properties": {
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Premium"
+                },
+                "threatIntelMode": "Alert",
+                "ipConfigurations": [
+                  {
+                    "name": "primaryfirewallconf",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      },
+                      "publicIPAddress": {
+                        "id": "[parameters('publicIpId')]"
+                      }
+                    }
+                  }
+                ],
+                "firewallPolicy": {
+                  "id": "[resourceId('Microsoft.Network/firewallPolicies', parameters('fwPolicyName'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies', parameters('fwPolicyName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "firewallPrivateIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/azureFirewalls', parameters('fwName')), '2024-03-01').ipConfigurations[0].properties.privateIPAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp')]",
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'hubResourceGroup')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubToSpoke1Peering')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubToSpoke2Peering')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'hubVnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "firewallCollectionGroups",
+      "resourceGroup": "[variables('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "firewallPublicIp": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "9910176241295152726"
+            }
+          },
+          "parameters": {
+            "fwPolicyName": {
+              "type": "string",
+              "defaultValue": "afwp-hub-demo"
+            },
+            "spokeToSpokeRuleCollectionGroupName": {
+              "type": "string",
+              "defaultValue": "rcg-spokeToSpoke"
+            },
+            "spokeToInternetRuleCollectionGroupName": {
+              "type": "string",
+              "defaultValue": "rcg-spokeToInternet"
+            },
+            "spokeToDCRuleCollectionGroupName": {
+              "type": "string",
+              "defaultValue": "rcg-spokeToDC"
+            },
+            "DNATRuleCollectionGroupName": {
+              "type": "string",
+              "defaultValue": "rcg-dnat"
+            },
+            "spokeToInternetDuplicatedRuleCollectionGroupName": {
+              "type": "string",
+              "defaultValue": "rcg-spokeToInternetDuplicated"
+            },
+            "firewallPublicIp": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "dnatRuleCollections": [
+              {
+                "name": "rc-spoke1dnat",
+                "priority": 100,
+                "ruleCollectionType": "FirewallPolicyNatRuleCollection",
+                "action": {
+                  "type": "Dnat"
+                },
+                "rules": [
+                  {
+                    "ruleType": "NatRule",
+                    "name": "ssh-lnx001",
+                    "translatedAddress": "10.0.20.4",
+                    "translatedPort": "22",
+                    "sourceAddresses": [
+                      "*"
+                    ],
+                    "destinationAddresses": [
+                      "[parameters('firewallPublicIp')]"
+                    ],
+                    "destinationPorts": [
+                      "22"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ]
+                  },
+                  {
+                    "ruleType": "NatRule",
+                    "name": "ssh-lnx002",
+                    "translatedAddress": "10.0.20.5",
+                    "translatedPort": "22",
+                    "sourceAddresses": [
+                      "*"
+                    ],
+                    "destinationAddresses": [
+                      "[parameters('firewallPublicIp')]"
+                    ],
+                    "destinationPorts": [
+                      "23"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "rc-spoke2dnat",
+                "priority": 200,
+                "ruleCollectionType": "FirewallPolicyNatRuleCollection",
+                "action": {
+                  "type": "Dnat"
+                },
+                "rules": [
+                  {
+                    "ruleType": "NatRule",
+                    "name": "rdp-win001",
+                    "translatedAddress": "10.0.30.4",
+                    "translatedPort": "3389",
+                    "sourceAddresses": [
+                      "*"
+                    ],
+                    "destinationAddresses": [
+                      "[parameters('firewallPublicIp')]"
+                    ],
+                    "destinationPorts": [
+                      "3389"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ]
+                  },
+                  {
+                    "ruleType": "NatRule",
+                    "name": "rdp-win002",
+                    "translatedAddress": "10.0.30.5",
+                    "translatedPort": "3389",
+                    "sourceAddresses": [
+                      "*"
+                    ],
+                    "destinationAddresses": [
+                      "[parameters('firewallPublicIp')]"
+                    ],
+                    "destinationPorts": [
+                      "3390"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ]
+                  },
+                  {
+                    "ruleType": "NatRule",
+                    "name": "https-win001",
+                    "translatedAddress": "10.0.30.4",
+                    "translatedPort": "443",
+                    "sourceAddresses": [
+                      "*"
+                    ],
+                    "destinationAddresses": [
+                      "[parameters('firewallPublicIp')]"
+                    ],
+                    "destinationPorts": [
+                      "443"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ]
+                  },
+                  {
+                    "ruleType": "NatRule",
+                    "name": "https-win002",
+                    "translatedAddress": "10.0.30.5",
+                    "translatedPort": "443",
+                    "sourceAddresses": [
+                      "*"
+                    ],
+                    "destinationAddresses": [
+                      "[parameters('firewallPublicIp')]"
+                    ],
+                    "destinationPorts": [
+                      "8443"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "spokeToSpokeRuleCollections": [
+              {
+                "name": "rc-spoke1ToSpoke2",
+                "priority": 100,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "https-win",
+                    "destinationAddresses": [
+                      "10.0.30.0/24"
+                    ],
+                    "destinationPorts": [
+                      "443"
+                    ],
+                    "ipProtocols": [
+                      "TCP",
+                      "UDP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/28",
+                      "10.0.20.16/28",
+                      "10.0.20.32/28",
+                      "10.0.20.48/28",
+                      "10.0.20.64/28",
+                      "10.0.20.80/28",
+                      "10.0.20.96/28",
+                      "10.0.20.112/28",
+                      "10.0.20.128/28",
+                      "10.0.20.144/28",
+                      "10.0.20.160/28",
+                      "10.0.20.176/28",
+                      "10.0.20.192/28",
+                      "10.0.20.208/28",
+                      "10.0.20.224/28",
+                      "10.0.20.240/28"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "rdp-win",
+                    "destinationAddresses": [
+                      "10.0.30.0/27"
+                    ],
+                    "destinationPorts": [
+                      "3389"
+                    ],
+                    "ipProtocols": [
+                      "TCP",
+                      "UDP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "rdp-win-dup",
+                    "destinationAddresses": [
+                      "10.0.30.0/24"
+                    ],
+                    "destinationPorts": [
+                      "3389"
+                    ],
+                    "ipProtocols": [
+                      "TCP",
+                      "UDP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "icmp-win",
+                    "destinationAddresses": [
+                      "10.0.30.0/27"
+                    ],
+                    "destinationPorts": [
+                      "*"
+                    ],
+                    "ipProtocols": [
+                      "ICMP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "icmp-win-dup",
+                    "destinationAddresses": [
+                      "10.0.30.0/24"
+                    ],
+                    "destinationPorts": [
+                      "*"
+                    ],
+                    "ipProtocols": [
+                      "ICMP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "icmp-win-dup2",
+                    "destinationAddresses": [
+                      "10.0.30.0/25",
+                      "10.0.30.0/25"
+                    ],
+                    "destinationPorts": [
+                      "*"
+                    ],
+                    "ipProtocols": [
+                      "ICMP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "rc-spoke2ToSpoke1",
+                "priority": 200,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "ssh-lnx",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "22"
+                    ],
+                    "ipProtocols": [
+                      "Any"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "icmp-lnx",
+                    "destinationAddresses": [
+                      "*"
+                    ],
+                    "destinationPorts": [
+                      "*"
+                    ],
+                    "ipProtocols": [
+                      "ICMP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "spokeToDCRuleCollections": [
+              {
+                "name": "rc-spoke1ToDC",
+                "priority": 100,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "DNS-lnx",
+                    "destinationAddresses": [
+                      "10.0.20.0/27"
+                    ],
+                    "destinationPorts": [
+                      "53",
+                      "54"
+                    ],
+                    "ipProtocols": [
+                      "Any"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "DNS-lnx-dup",
+                    "destinationAddresses": [
+                      "10.0.20.0/27"
+                    ],
+                    "destinationPorts": [
+                      "53"
+                    ],
+                    "ipProtocols": [
+                      "TCP",
+                      "UDP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "rc-spoke2ToDC",
+                "priority": 200,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "ldap-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/28",
+                      "10.0.20.16/28",
+                      "10.0.20.32/28",
+                      "10.0.20.48/28",
+                      "10.0.20.64/28",
+                      "10.0.20.80/28",
+                      "10.0.20.96/28",
+                      "10.0.20.112/28",
+                      "10.0.20.128/28",
+                      "10.0.20.144/28",
+                      "10.0.20.160/28",
+                      "10.0.20.176/28",
+                      "10.0.20.192/28",
+                      "10.0.20.208/28",
+                      "10.0.20.224/28",
+                      "10.0.20.240/28"
+                    ],
+                    "destinationPorts": [
+                      "389",
+                      "636"
+                    ],
+                    "ipProtocols": [
+                      "Any"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "ldapgc-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/26",
+                      "10.0.20.64/26",
+                      "10.0.20.128/26",
+                      "10.0.20.192/26"
+                    ],
+                    "destinationPorts": [
+                      "3268",
+                      "3269"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "kerberos-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "88",
+                      "464"
+                    ],
+                    "ipProtocols": [
+                      "TCP",
+                      "UDP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "dns-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "53"
+                    ],
+                    "ipProtocols": [
+                      "TCP",
+                      "UDP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "smb-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "445"
+                    ],
+                    "ipProtocols": [
+                      "Any"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "replication-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "25",
+                      "135"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "dynamic-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "49152-65535"
+                    ],
+                    "ipProtocols": [
+                      "TCP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "time-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "123"
+                    ],
+                    "ipProtocols": [
+                      "UDP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "dfsnetl-win",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "137-139"
+                    ],
+                    "ipProtocols": [
+                      "UDP",
+                      "TCP"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  },
+                  {
+                    "ruleType": "NetworkRule",
+                    "name": "dfsnetl-win-dup",
+                    "destinationAddresses": [
+                      "10.0.20.0/24"
+                    ],
+                    "destinationPorts": [
+                      "137-139"
+                    ],
+                    "ipProtocols": [
+                      "Any"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/24"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "spokeToInternetDuplicatedRuleCollections": [
+              {
+                "name": "rc-spoke1ToInternet-dup",
+                "priority": 100,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "google-lnx-dup",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      }
+                    ],
+                    "targetFqdns": [
+                      "*.google.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "youtube-lnx-dup",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "targetFqdns": [
+                      "*.youtube.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "websearchengines-lnx-dup",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "searchenginesandportals"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "spokeToInternetRuleCollections": [
+              {
+                "name": "rc-spoke1ToInternet",
+                "priority": 100,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "google-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      }
+                    ],
+                    "targetFqdns": [
+                      "*.google.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "youtube-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "targetFqdns": [
+                      "*.youtube.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "websearchengines-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "searchenginesandportals"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "websocialnetworking-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "socialnetworking"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "webnews-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "news"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "webgambling-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "gambling"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "webalcohol-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "alcoholandtobacco"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "ubuntuarchive-lnx",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "targetFqdns": [
+                      "archive.ubuntu.com",
+                      "security.ubuntu.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "rc-spoke2ToInternet",
+                "priority": 200,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "windowsupdates-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "fqdnTags": [
+                      "WindowsUpdate"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "google-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      }
+                    ],
+                    "targetFqdns": [
+                      "*.google.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "youtube-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "targetFqdns": [
+                      "*.youtube.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "websearchengines-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "searchenginesandportals"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "websocialnetworking-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "socialnetworking"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "webnews-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "news"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "webgambling-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "gambling"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "webalcohol-win",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "alcoholandtobacco"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.30.0/27"
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "rc-dcToInternet",
+                "priority": 300,
+                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+                "action": {
+                  "type": "Allow"
+                },
+                "rules": [
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "windowsupdates-dc",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "fqdnTags": [
+                      "WindowsUpdate"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/27"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+              "apiVersion": "2022-05-01",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('DNATRuleCollectionGroupName'))]",
+              "properties": {
+                "priority": 1000,
+                "ruleCollections": "[variables('dnatRuleCollections')]"
+              }
+            },
+            {
+              "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+              "apiVersion": "2022-05-01",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToSpokeRuleCollectionGroupName'))]",
+              "properties": {
+                "priority": 2000,
+                "ruleCollections": "[variables('spokeToSpokeRuleCollections')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('DNATRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('DNATRuleCollectionGroupName')), '/')[1])]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+              "apiVersion": "2022-05-01",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToDCRuleCollectionGroupName'))]",
+              "properties": {
+                "priority": 3000,
+                "ruleCollections": "[variables('spokeToDCRuleCollections')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToSpokeRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToSpokeRuleCollectionGroupName')), '/')[1])]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+              "apiVersion": "2022-05-01",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetRuleCollectionGroupName'))]",
+              "properties": {
+                "priority": 4000,
+                "ruleCollections": "[variables('spokeToInternetRuleCollections')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToDCRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToDCRuleCollectionGroupName')), '/')[1])]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
+              "apiVersion": "2022-05-01",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetDuplicatedRuleCollectionGroupName'))]",
+              "properties": {
+                "priority": 5000,
+                "ruleCollections": "[variables('spokeToInternetDuplicatedRuleCollections')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetRuleCollectionGroupName')), '/')[1])]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "vmIIS-1",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "virtualMachineName": {
+            "value": "[variables('IIS1ComputerName')]"
+          },
+          "osDiskType": {
+            "value": "Standard_LRS"
+          },
+          "computerName": {
+            "value": "[variables('IIS1ComputerName')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "subnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Vnet'), '2022-09-01').outputs.subnets.value[0].id]"
+          },
+          "privateIpAddress": {
+            "value": "10.0.30.4"
+          },
+          "publicIpId": {
+            "value": ""
+          },
+          "publisher": {
+            "value": "[variables('windowsPublisher')]"
+          },
+          "offer": {
+            "value": "[variables('windowsOffer')]"
+          },
+          "sku": {
+            "value": "[variables('windowsSku')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "18278501422714419980"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "virtualMachineName": {
+              "type": "string"
+            },
+            "networkInterfaceName": {
+              "type": "string",
+              "defaultValue": "[format('nic-{0}', parameters('virtualMachineName'))]"
+            },
+            "osDiskType": {
+              "type": "string",
+              "defaultValue": "Standard_LRS"
+            },
+            "virtualMachineSize": {
+              "type": "string",
+              "defaultValue": "Standard_DS1_v2"
+            },
+            "adminUsername": {
+              "type": "string"
+            },
+            "adminPassword": {
+              "type": "securestring"
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "publicIpId": {
+              "type": "string"
+            },
+            "computerName": {
+              "type": "string"
+            },
+            "privateIpAllocationMethod": {
+              "type": "string",
+              "defaultValue": "Static"
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "publisher": {
+              "type": "string"
+            },
+            "offer": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2022-05-01",
+              "name": "[parameters('networkInterfaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      },
+                      "privateIPAllocationMethod": "[parameters('privateIpAllocationMethod')]",
+                      "privateIPAddress": "[parameters('privateIpAddress')]",
+                      "publicIPAddress": "[if(equals(parameters('publicIpId'), ''), null(), createObject('id', parameters('publicIpId')))]"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2021-07-01",
+              "name": "[parameters('virtualMachineName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "[parameters('osDiskType')]"
+                    }
+                  },
+                  "imageReference": {
+                    "publisher": "[parameters('publisher')]",
+                    "offer": "[parameters('offer')]",
+                    "sku": "[parameters('sku')]",
+                    "version": "latest"
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+                    }
+                  ]
+                },
+                "osProfile": {
+                  "computerName": "[parameters('computerName')]",
+                  "adminUsername": "[parameters('adminUsername')]",
+                  "adminPassword": "[parameters('adminPassword')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "virtualMachinePrivateIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName')), '2022-05-01').ipConfigurations[0].properties.privateIPAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "vmIIS-2",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "virtualMachineName": {
+            "value": "[variables('IIS2ComputerName')]"
+          },
+          "osDiskType": {
+            "value": "Standard_LRS"
+          },
+          "computerName": {
+            "value": "[variables('IIS2ComputerName')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "subnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Vnet'), '2022-09-01').outputs.subnets.value[0].id]"
+          },
+          "privateIpAddress": {
+            "value": "10.0.30.5"
+          },
+          "publicIpId": {
+            "value": ""
+          },
+          "publisher": {
+            "value": "[variables('windowsPublisher')]"
+          },
+          "offer": {
+            "value": "[variables('windowsOffer')]"
+          },
+          "sku": {
+            "value": "[variables('windowsSku')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "18278501422714419980"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "virtualMachineName": {
+              "type": "string"
+            },
+            "networkInterfaceName": {
+              "type": "string",
+              "defaultValue": "[format('nic-{0}', parameters('virtualMachineName'))]"
+            },
+            "osDiskType": {
+              "type": "string",
+              "defaultValue": "Standard_LRS"
+            },
+            "virtualMachineSize": {
+              "type": "string",
+              "defaultValue": "Standard_DS1_v2"
+            },
+            "adminUsername": {
+              "type": "string"
+            },
+            "adminPassword": {
+              "type": "securestring"
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "publicIpId": {
+              "type": "string"
+            },
+            "computerName": {
+              "type": "string"
+            },
+            "privateIpAllocationMethod": {
+              "type": "string",
+              "defaultValue": "Static"
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "publisher": {
+              "type": "string"
+            },
+            "offer": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2022-05-01",
+              "name": "[parameters('networkInterfaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      },
+                      "privateIPAllocationMethod": "[parameters('privateIpAllocationMethod')]",
+                      "privateIPAddress": "[parameters('privateIpAddress')]",
+                      "publicIPAddress": "[if(equals(parameters('publicIpId'), ''), null(), createObject('id', parameters('publicIpId')))]"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2021-07-01",
+              "name": "[parameters('virtualMachineName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "[parameters('osDiskType')]"
+                    }
+                  },
+                  "imageReference": {
+                    "publisher": "[parameters('publisher')]",
+                    "offer": "[parameters('offer')]",
+                    "sku": "[parameters('sku')]",
+                    "version": "latest"
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+                    }
+                  ]
+                },
+                "osProfile": {
+                  "computerName": "[parameters('computerName')]",
+                  "adminUsername": "[parameters('adminUsername')]",
+                  "adminPassword": "[parameters('adminPassword')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "virtualMachinePrivateIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName')), '2022-05-01').ipConfigurations[0].properties.privateIPAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "IISConfiguration-1",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "properties": {
+            "value": "[variables('spokeVmIISExtensionProperties')]"
+          },
+          "vmExtensionName": {
+            "value": "IIS-installation"
+          },
+          "vmName": {
+            "value": "[variables('IIS1ComputerName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "11004510125741261431"
+            }
+          },
+          "parameters": {
+            "vmName": {
+              "type": "string"
+            },
+            "vmExtensionName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "properties": {
+              "type": "object"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/virtualMachines/extensions",
+              "apiVersion": "2020-12-01",
+              "name": "[format('{0}/{1}', parameters('vmName'), parameters('vmExtensionName'))]",
+              "location": "[parameters('location')]",
+              "properties": "[parameters('properties')]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'vmIIS-1')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "IISConfiguration-2",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "properties": {
+            "value": "[variables('spokeVmIISExtensionProperties')]"
+          },
+          "vmExtensionName": {
+            "value": "IIS-installation"
+          },
+          "vmName": {
+            "value": "[variables('IIS2ComputerName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "11004510125741261431"
+            }
+          },
+          "parameters": {
+            "vmName": {
+              "type": "string"
+            },
+            "vmExtensionName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "properties": {
+              "type": "object"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/virtualMachines/extensions",
+              "apiVersion": "2020-12-01",
+              "name": "[format('{0}/{1}', parameters('vmName'), parameters('vmExtensionName'))]",
+              "location": "[parameters('location')]",
+              "properties": "[parameters('properties')]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'vmIIS-2')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "linux1PublicIp",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "publicIpAddressName": {
+            "value": "[variables('linux1PublicIpName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "2173549090940773050"
+            }
+          },
+          "parameters": {
+            "publicIpAddressName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2024-05-01",
+              "name": "[parameters('publicIpAddressName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              },
+              "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+              },
+              "zones": [
+                "1",
+                "2",
+                "3"
+              ]
+            }
+          ],
+          "outputs": {
+            "ipId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpAddressName'))]"
+            },
+            "ipAddress": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpAddressName')), '2024-05-01').ipAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke1ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1LinuxVirtualMachine1",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "virtualMachineName": {
+            "value": "[variables('linux1ComputerName')]"
+          },
+          "osDiskType": {
+            "value": "Standard_LRS"
+          },
+          "computerName": {
+            "value": "[variables('linux1ComputerName')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "subnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet'), '2022-09-01').outputs.subnets.value[0].id]"
+          },
+          "privateIpAddress": {
+            "value": "10.0.20.4"
+          },
+          "publicIpId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'linux1PublicIp'), '2022-09-01').outputs.ipId.value]"
+          },
+          "publisher": {
+            "value": "[variables('linuxPublisher')]"
+          },
+          "offer": {
+            "value": "[variables('linuxOffer')]"
+          },
+          "sku": {
+            "value": "[variables('linuxSku')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "18278501422714419980"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "virtualMachineName": {
+              "type": "string"
+            },
+            "networkInterfaceName": {
+              "type": "string",
+              "defaultValue": "[format('nic-{0}', parameters('virtualMachineName'))]"
+            },
+            "osDiskType": {
+              "type": "string",
+              "defaultValue": "Standard_LRS"
+            },
+            "virtualMachineSize": {
+              "type": "string",
+              "defaultValue": "Standard_DS1_v2"
+            },
+            "adminUsername": {
+              "type": "string"
+            },
+            "adminPassword": {
+              "type": "securestring"
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "publicIpId": {
+              "type": "string"
+            },
+            "computerName": {
+              "type": "string"
+            },
+            "privateIpAllocationMethod": {
+              "type": "string",
+              "defaultValue": "Static"
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "publisher": {
+              "type": "string"
+            },
+            "offer": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2022-05-01",
+              "name": "[parameters('networkInterfaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      },
+                      "privateIPAllocationMethod": "[parameters('privateIpAllocationMethod')]",
+                      "privateIPAddress": "[parameters('privateIpAddress')]",
+                      "publicIPAddress": "[if(equals(parameters('publicIpId'), ''), null(), createObject('id', parameters('publicIpId')))]"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2021-07-01",
+              "name": "[parameters('virtualMachineName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "[parameters('osDiskType')]"
+                    }
+                  },
+                  "imageReference": {
+                    "publisher": "[parameters('publisher')]",
+                    "offer": "[parameters('offer')]",
+                    "sku": "[parameters('sku')]",
+                    "version": "latest"
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+                    }
+                  ]
+                },
+                "osProfile": {
+                  "computerName": "[parameters('computerName')]",
+                  "adminUsername": "[parameters('adminUsername')]",
+                  "adminPassword": "[parameters('adminPassword')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "virtualMachinePrivateIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName')), '2022-05-01').ipConfigurations[0].properties.privateIPAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'linux1PublicIp')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "linux2PublicIp",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "publicIpAddressName": {
+            "value": "[variables('linux2PublicIpName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "2173549090940773050"
+            }
+          },
+          "parameters": {
+            "publicIpAddressName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2024-05-01",
+              "name": "[parameters('publicIpAddressName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              },
+              "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+              },
+              "zones": [
+                "1",
+                "2",
+                "3"
+              ]
+            }
+          ],
+          "outputs": {
+            "ipId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpAddressName'))]"
+            },
+            "ipAddress": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpAddressName')), '2024-05-01').ipAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke1ResourceGroup')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "spoke1LinuxVirtualMachine2",
+      "resourceGroup": "[variables('spoke1RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "virtualMachineName": {
+            "value": "[variables('linux2ComputerName')]"
+          },
+          "osDiskType": {
+            "value": "Standard_LRS"
+          },
+          "computerName": {
+            "value": "[variables('linux2ComputerName')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "subnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet'), '2022-09-01').outputs.subnets.value[0].id]"
+          },
+          "privateIpAddress": {
+            "value": "10.0.20.5"
+          },
+          "publicIpId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'linux2PublicIp'), '2022-09-01').outputs.ipId.value]"
+          },
+          "publisher": {
+            "value": "[variables('linuxPublisher')]"
+          },
+          "offer": {
+            "value": "[variables('linuxOffer')]"
+          },
+          "sku": {
+            "value": "[variables('linuxSku')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "18278501422714419980"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "virtualMachineName": {
+              "type": "string"
+            },
+            "networkInterfaceName": {
+              "type": "string",
+              "defaultValue": "[format('nic-{0}', parameters('virtualMachineName'))]"
+            },
+            "osDiskType": {
+              "type": "string",
+              "defaultValue": "Standard_LRS"
+            },
+            "virtualMachineSize": {
+              "type": "string",
+              "defaultValue": "Standard_DS1_v2"
+            },
+            "adminUsername": {
+              "type": "string"
+            },
+            "adminPassword": {
+              "type": "securestring"
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "publicIpId": {
+              "type": "string"
+            },
+            "computerName": {
+              "type": "string"
+            },
+            "privateIpAllocationMethod": {
+              "type": "string",
+              "defaultValue": "Static"
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "publisher": {
+              "type": "string"
+            },
+            "offer": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2022-05-01",
+              "name": "[parameters('networkInterfaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      },
+                      "privateIPAllocationMethod": "[parameters('privateIpAllocationMethod')]",
+                      "privateIPAddress": "[parameters('privateIpAddress')]",
+                      "publicIPAddress": "[if(equals(parameters('publicIpId'), ''), null(), createObject('id', parameters('publicIpId')))]"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2021-07-01",
+              "name": "[parameters('virtualMachineName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "[parameters('osDiskType')]"
+                    }
+                  },
+                  "imageReference": {
+                    "publisher": "[parameters('publisher')]",
+                    "offer": "[parameters('offer')]",
+                    "sku": "[parameters('sku')]",
+                    "version": "latest"
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+                    }
+                  ]
+                },
+                "osProfile": {
+                  "computerName": "[parameters('computerName')]",
+                  "adminUsername": "[parameters('adminUsername')]",
+                  "adminPassword": "[parameters('adminPassword')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "virtualMachinePrivateIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName')), '2022-05-01').ipConfigurations[0].properties.privateIPAddress]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'linux2PublicIp')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet')]"
+      ]
+    }
+  ]
+}
