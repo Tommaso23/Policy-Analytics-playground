@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "16935393790474418189"
+      "templateHash": "4061027018020444515"
     }
   },
   "parameters": {
@@ -42,7 +42,6 @@
     "hubRgName": "[format('rg-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "spoke1RgName": "[format('rg-spoke1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "spoke2RgName": "[format('rg-spoke2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
-    "automationRgName": "[format('rg-automation-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "hubVnetName": "[format('vnet-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "spoke1VnetName": "[format('vnet-spoke1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "spoke2VnetName": "[format('vnet-spoke2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
@@ -237,53 +236,6 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "automationResourceGroup",
-      "location": "[deployment().location]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "rgName": {
-            "value": "[variables('automationRgName')]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.36.1.42791",
-              "templateHash": "2338463022714296664"
-            }
-          },
-          "parameters": {
-            "location": {
-              "type": "string"
-            },
-            "rgName": {
-              "type": "string"
-            }
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Resources/resourceGroups",
-              "apiVersion": "2024-11-01",
-              "name": "[parameters('rgName')]",
-              "location": "[parameters('location')]"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
       "name": "hubVnet",
       "resourceGroup": "[variables('hubRgName')]",
       "properties": {
@@ -400,7 +352,7 @@
                 "subnetAddrPrefix": "[variables('linuxSubnetAddrPrefix')]",
                 "subnetName": "snet-linux-vms",
                 "nsgId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Nsg'), '2022-09-01').outputs.nsgId.value]",
-                "routeTableId": ""
+                "routeTableId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'Spoke1RouteTable'), '2022-09-01').outputs.rtId.value]"
               }
             ]
           }
@@ -470,7 +422,8 @@
       },
       "dependsOn": [
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Nsg')]",
-        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke1ResourceGroup')]"
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke1ResourceGroup')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'Spoke1RouteTable')]"
       ]
     },
     {
@@ -499,7 +452,7 @@
                 "subnetAddrPrefix": "[variables('winSubnetAddrPrefix')]",
                 "subnetName": "snet-win-vms",
                 "nsgId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Nsg'), '2022-09-01').outputs.nsgId.value]",
-                "routeTableId": ""
+                "routeTableId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'Spoke2RouteTable'), '2022-09-01').outputs.rtId.value]"
               }
             ]
           }
@@ -569,7 +522,8 @@
       },
       "dependsOn": [
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'spoke2Nsg')]",
-        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke2ResourceGroup')]"
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'spoke2ResourceGroup')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'Spoke2RouteTable')]"
       ]
     },
     {
