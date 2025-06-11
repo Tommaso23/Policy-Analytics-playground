@@ -1,17 +1,21 @@
 targetScope = 'subscription'
-
 param location string = deployment().location
 
+@description('Name of the workload')
+param workloadName string
+@description('Alias for the location, used to create unique resource names.')
+param locationAlias string
+
 /*Resource Groups*/
-var hubRgName = 'rg-hub-itn'
-var spoke1RgName = 'rg-spoke1-itn'
-var spoke2RgName = 'rg-spoke2-itn'
-var automationRgName = 'rg-automation-itn'
+var hubRgName = 'rg-hub-${workloadName}-${locationAlias}'
+var spoke1RgName = 'rg-spoke1-${workloadName}-${locationAlias}'
+var spoke2RgName = 'rg-spoke2-${workloadName}-${locationAlias}'
+var automationRgName = 'rg-automation-${workloadName}-${locationAlias}'
 
 /*VNET*/
-var hubVnetName = 'vnet-hub-itn' //hub
-var spoke1VnetName = 'vnet-spoke1-itn' //linux
-var spoke2VnetName = 'vnet-spoke2-itn' //windows
+var hubVnetName = 'vnet-hub-${workloadName}-${locationAlias}' //hub
+var spoke1VnetName = 'vnet-spoke1-${workloadName}-${locationAlias}' //linux
+var spoke2VnetName = 'vnet-spoke2-${workloadName}-${locationAlias}' //windows
 
 var hubVnetAddrPrefix = ['10.0.10.0/24'] 
 var spoke1VnetAddrPrefix = ['10.0.20.0/24']
@@ -19,24 +23,23 @@ var spoke2VnetAddrPrefix = ['10.0.30.0/24']
 
 /*SUBNET*/
 var hubSubnetAddrPrefix = '10.0.10.0/26'
-var linuxSubnetAddrPrefix = '10.0.20.0/27' //before: 10.0.30.0/27
+var linuxSubnetAddrPrefix = '10.0.20.0/27' 
 var winSubnetAddrPrefix = '10.0.30.0/27'
 
 /*VIRTUAL MACHINE*/
 @description('username administrator for all VMs')
-param adminUsername string = 'azureuser'
+param adminUsername string
 
 @description('username administrator password for all VMs')
 @secure()
-param adminPassword string = 'Password123?'
+param adminPassword string 
 
-var IIS1ComputerName = 'vm-iis-1-itn'
-var IIS2ComputerName = 'vm-iis-2-itn'
-var linux1ComputerName = 'vm-lnx-1-itn'
-var linux2ComputerName = 'vm-lnx-2-itn'
+var IIS1ComputerName = 'vm-iis-1-${workloadName}-${locationAlias}'
+var IIS2ComputerName = 'vm-iis-2-${workloadName}-${locationAlias}'
+var linux1ComputerName = 'vm-lnx-1-${workloadName}-${locationAlias}'
+var linux2ComputerName = 'vm-lnx-2-${workloadName}-${locationAlias}'
 var linux1PublicIpName = 'pip-${linux1ComputerName}'
 var linux2PublicIpName = 'pip-${linux2ComputerName}'
-
 
 var windowsPublisher = 'MicrosoftWindowsServer'
 var windowsOffer = 'WindowsServer'
@@ -45,7 +48,6 @@ var windowsSku = '2022-Datacenter-azure-edition'
 var linuxPublisher = 'canonical'
 var linuxOffer = 'ubuntu-24_04-lts'
 var linuxSku = 'server'
-
 
 
 var spokeVmIISExtensionProperties = {
@@ -86,9 +88,9 @@ var spoke1RouteTableName = 'rt-spoke1-vnet'
 var spoke2RouteTableName = 'rt-spoke2-vnet'
 
 /*FIREWALL*/
-var firewallName = 'afw-hub-itn'
+var firewallName = 'afw-hub-${workloadName}-${locationAlias}'
 var fwTier = 'Premium'
-var fwPolicyName = 'afwp-hub-demo'
+var fwPolicyName = 'afwp-hub-${workloadName}-${locationAlias}'
 
 var spoke1SubnetRouteTableRoutes = [
   {
@@ -119,10 +121,8 @@ var spoke2SubnetRouteTableRoutes = [
   }
 ]
 
-    
-
 // RESOURCE GROUPS //
-module hubResourceGroup 'modules/resourceGroup.bicep' = {
+module hubResourceGroup 'modules/resourcegroup.bicep' = {
   name: 'hubResourceGroup'
   params: {
     location: location
@@ -130,7 +130,7 @@ module hubResourceGroup 'modules/resourceGroup.bicep' = {
   }
 }
 
-module spoke1ResourceGroup 'modules/resourceGroup.bicep' = {
+module spoke1ResourceGroup 'modules/resourcegroup.bicep' = {
   name: 'spoke1ResourceGroup'
   params: {
     location: location
@@ -138,7 +138,7 @@ module spoke1ResourceGroup 'modules/resourceGroup.bicep' = {
   }
 }
 
-module spoke2ResourceGroup 'modules/resourceGroup.bicep' = {
+module spoke2ResourceGroup 'modules/resourcegroup.bicep' = {
   name: 'spoke2ResourceGroup'
   params: {
     location: location
@@ -146,14 +146,13 @@ module spoke2ResourceGroup 'modules/resourceGroup.bicep' = {
   }
 }
 
-module automationResourceGroup 'modules/resourceGroup.bicep' = {
+module automationResourceGroup 'modules/resourcegroup.bicep' = {
   name: 'automationResourceGroup'
   params: {
     location: location
     rgName: automationRgName
   }
 }
-
 
 // VNET //
 module hubVnet 'modules/vnet.bicep' = {
@@ -199,52 +198,64 @@ module spoke2Vnet 'modules/vnet.bicep' = {
 
 
 // VNET PEERING //
-module hubToSpoke1Peering 'modules/vnetPeering.bicep' = {
+module hubToSpoke1Peering 'modules/vnetpeering.bicep' = {
   name: 'hubToSpoke1Peering'
   scope: resourceGroup(hubRgName)
   params: {
     peeringName: 'hubToSpoke1'
     sourceVnetName: hubVnetName
     destinationVnetId: spoke1Vnet.outputs.vnetId
+    allowForwardedTraffic: false
+    allowGatewayTransit: true
+    useRemoteGateways: false
   }
   dependsOn: [
     hubVnet
   ]
 }
 
-module hubToSpoke2Peering 'modules/vnetPeering.bicep' = {
+module hubToSpoke2Peering 'modules/vnetpeering.bicep' = {
   name: 'hubToSpoke2Peering'
   scope: resourceGroup(hubRgName)
   params: {
     peeringName: 'hubToSpoke2'
     sourceVnetName: hubVnetName
     destinationVnetId: spoke2Vnet.outputs.vnetId
+    allowForwardedTraffic: false
+    allowGatewayTransit: true
+    useRemoteGateways: false
   }
   dependsOn: [
     hubVnet
   ]
 }
 
-module spoke1ToHubPeering 'modules/vnetPeering.bicep' = {
+module spoke1ToHubPeering 'modules/vnetpeering.bicep' = {
   name: 'spoke1ToHubPeering'
   scope: resourceGroup(spoke1RgName)
   params: {
     peeringName: 'spoke1ToHub'
     sourceVnetName: spoke1VnetName
     destinationVnetId: hubVnet.outputs.vnetId
+    allowForwardedTraffic: true
+    allowGatewayTransit: false
+    useRemoteGateways: true 
   }
   dependsOn: [
     spoke1Vnet
   ]
 }
 
-module spoke2ToHubPeering 'modules/vnetPeering.bicep' = {
+module spoke2ToHubPeering 'modules/vnetpeering.bicep' = {
   name: 'spoke2ToHubPeering'
   scope: resourceGroup(spoke2RgName)
   params: {
     peeringName: 'spoke2ToHub'
     sourceVnetName: spoke2VnetName
     destinationVnetId: hubVnet.outputs.vnetId
+    allowForwardedTraffic: true
+    allowGatewayTransit: false
+    useRemoteGateways: true 
   }
   dependsOn: [
     spoke2Vnet
@@ -252,24 +263,26 @@ module spoke2ToHubPeering 'modules/vnetPeering.bicep' = {
 }
 
 // NSG //
-module spoke1Nsg 'modules/networkSecurityGroup.bicep' = {
+module spoke1Nsg 'modules/networksecuritygroup.bicep' = {
   name: 'spoke1Nsg'
   scope: resourceGroup(spoke1RgName)
   params: {
     location: location
     name: 'nsg-spoke1-in'
+    securityRules: []
   }
   dependsOn: [
     spoke1ResourceGroup
   ]
 }
 
-module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
+module spoke2Nsg 'modules/networksecuritygroup.bicep' = {
   name: 'spoke2Nsg'
   scope: resourceGroup(spoke2RgName)
   params: {
     location: location
     name: 'nsg-spoke2-in'
+    securityRules: []
   }
   dependsOn: [
     spoke2ResourceGroup
@@ -278,7 +291,7 @@ module spoke2Nsg 'modules/networkSecurityGroup.bicep' = {
 
 
 // ROUTE TABLES and ROUTES //
-module spoke1RouteTable 'modules/routeTable.bicep' = {
+module spoke1RouteTable 'modules/routetable.bicep' = {
   name: 'Spoke1RouteTable'
   scope: resourceGroup(spoke1RgName)
   params: {
@@ -290,7 +303,7 @@ module spoke1RouteTable 'modules/routeTable.bicep' = {
   ]
 }
 
-module spoke2RouteTable 'modules/routeTable.bicep' = {
+module spoke2RouteTable 'modules/routetable.bicep' = {
   name: 'Spoke2RouteTable'
   scope: resourceGroup(spoke2RgName)
   params: {
@@ -348,7 +361,7 @@ module spoke2SubnetRouteTableRoutesConf 'modules/routetableroute.bicep' = {
 }
 
 // FIREWALL //
-module azureFirewallPublicIp 'modules/publicIp.bicep' = {
+module azureFirewallPublicIp 'modules/publicip.bicep' = {
   name: 'azureFirewallPublicIp'
   scope: resourceGroup(hubRgName)
   params: {
@@ -379,7 +392,7 @@ module azureFirewall 'modules/firewall.bicep' = {
   ]
 }
 
-module firewallCollectionGroups 'modules/fwCollectionGroups.bicep' = {
+module firewallCollectionGroups 'modules/firewallcollectiongroup.bicep' = {
   name: 'firewallCollectionGroups'
   scope: resourceGroup(hubRgName)
   params: {
@@ -390,8 +403,8 @@ module firewallCollectionGroups 'modules/fwCollectionGroups.bicep' = {
   ]
 }
 
-module IIS1 'modules/virtualmachine.bicep' = {
-  name: 'IIS-1'
+module vmIIS1 'modules/virtualmachine.bicep' = {
+  name: 'vmIIS-1'
   scope: resourceGroup(spoke2RgName)
   params: {
     location: location
@@ -409,8 +422,8 @@ module IIS1 'modules/virtualmachine.bicep' = {
   }
 }
 
-module IIS2 'modules/virtualmachine.bicep' = {
-  name: 'IIS-2'
+module vmIIS2 'modules/virtualmachine.bicep' = {
+  name: 'vmIIS-2'
   scope: resourceGroup(spoke2RgName)
   params: {
     location: location
@@ -439,7 +452,7 @@ module IISConfiguration1 'modules/virtualmachineextension.bicep' = {
     vmName: IIS1ComputerName
   }
   dependsOn: [
-    IIS1
+    vmIIS1
   ]
 }
 
@@ -453,7 +466,7 @@ module IISConfiguration2 'modules/virtualmachineextension.bicep' = {
     vmName: IIS2ComputerName
   }
   dependsOn: [
-    IIS2
+    vmIIS2
   ]
 }
 
