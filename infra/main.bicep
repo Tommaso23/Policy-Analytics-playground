@@ -33,8 +33,8 @@ param adminUsername string
 @secure()
 param adminPassword string 
 
-var IIS1ComputerName = 'vm-iis1-${workloadName}-${locationAlias}'
-var IIS2ComputerName = 'vm-iis2-${workloadName}-${locationAlias}'
+var IIS1ComputerName = 'vm-win1-${locationAlias}'
+var IIS2ComputerName = 'vm-win2-${locationAlias}'
 var linux1ComputerName = 'vm-lnx-1-${workloadName}-${locationAlias}'
 var linux2ComputerName = 'vm-lnx-2-${workloadName}-${locationAlias}'
 var linux1PublicIpName = 'pip-${linux1ComputerName}'
@@ -259,7 +259,7 @@ module spoke1Nsg 'modules/networksecuritygroup.bicep' = {
   scope: resourceGroup(spoke1RgName)
   params: {
     location: location
-    name: 'nsg-spoke1-in'
+    name: 'nsg-spoke1-itn'
     securityRules: []
   }
   dependsOn: [
@@ -272,7 +272,7 @@ module spoke2Nsg 'modules/networksecuritygroup.bicep' = {
   scope: resourceGroup(spoke2RgName)
   params: {
     location: location
-    name: 'nsg-spoke2-in'
+    name: 'nsg-spoke2-itn'
     securityRules: []
   }
   dependsOn: [
@@ -387,6 +387,7 @@ module firewallCollectionGroups 'modules/firewallcollectiongroup.bicep' = {
   name: 'firewallCollectionGroups'
   scope: resourceGroup(hubRgName)
   params: {
+    fwPolicyName: fwPolicyName
     firewallPublicIp: azureFirewallPublicIp.outputs.ipAddress 
   }
   dependsOn: [

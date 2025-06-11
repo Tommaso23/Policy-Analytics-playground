@@ -1,10 +1,9 @@
-param fwPolicyName string = 'afwp-hub-demo'
-param spokeToSpokeRuleCollectionGroupName string = 'rcg-spokeToSpoke'
-param spokeToInternetRuleCollectionGroupName string = 'rcg-spokeToInternet'
-param spokeToDCRuleCollectionGroupName string = 'rcg-spokeToDC'
-param DNATRuleCollectionGroupName string = 'rcg-dnat'
-param spokeToInternetDuplicatedRuleCollectionGroupName string = 'rcg-spokeToInternetDuplicated'
+param fwPolicyName string
 param firewallPublicIp string
+var spokeToSpokeRuleCollectionGroupName = 'rcg-spokeToSpoke'
+var spokeToInternetRuleCollectionGroupName = 'rcg-spokeToInternet'
+var DNATRuleCollectionGroupName = 'rcg-dnat'
+var spokeToInternetDuplicatedRuleCollectionGroupName = 'rcg-spokeToInternetDuplicated'
 
 var dnatRuleCollections = [
   {
@@ -17,7 +16,7 @@ var dnatRuleCollections = [
     rules: [
       {
         ruleType: 'NatRule'
-        name: 'ssh-lnx001'
+        name: 'ssh-lnx01'
         translatedAddress: '10.0.20.4'
         translatedPort: '22'
         sourceAddresses: [
@@ -35,7 +34,7 @@ var dnatRuleCollections = [
       }
       {
         ruleType: 'NatRule'
-        name: 'ssh-lnx002'
+        name: 'ssh-lnx02'
         translatedAddress: '10.0.20.5'
         translatedPort: '22'
         sourceAddresses: [
@@ -63,7 +62,7 @@ var dnatRuleCollections = [
     rules: [
       {
         ruleType: 'NatRule'
-        name: 'rdp-win001'
+        name: 'rdp-win01'
         translatedAddress: '10.0.30.4'
         translatedPort: '3389'
         sourceAddresses: [
@@ -81,7 +80,7 @@ var dnatRuleCollections = [
       }
       {
         ruleType: 'NatRule'
-        name: 'rdp-win002'
+        name: 'rdp-win02'
         translatedAddress: '10.0.30.5'
         translatedPort: '3389'
         sourceAddresses: [
@@ -99,9 +98,9 @@ var dnatRuleCollections = [
       }
       {
         ruleType: 'NatRule'
-        name: 'https-win001'
+        name: 'https-win01'
         translatedAddress: '10.0.30.4'
-        translatedPort: '443'
+        translatedPort: '80'
         sourceAddresses: [
           '*'
         ]
@@ -109,7 +108,7 @@ var dnatRuleCollections = [
           firewallPublicIp
         ]
         destinationPorts: [
-          '443'
+          '80'
         ]
         ipProtocols: [
           'TCP'
@@ -117,9 +116,9 @@ var dnatRuleCollections = [
       }
       {
         ruleType: 'NatRule'
-        name: 'https-win002'
+        name: 'https-win02'
         translatedAddress: '10.0.30.5'
-        translatedPort: '443'
+        translatedPort: '80'
         sourceAddresses: [
           '*'
         ]
@@ -127,7 +126,7 @@ var dnatRuleCollections = [
           firewallPublicIp
         ]
         destinationPorts: [
-          '8443'
+          '8080'
         ]
         ipProtocols: [
           'TCP'
@@ -149,12 +148,12 @@ var spokeToSpokeRuleCollections = [
       {
         
         ruleType: 'NetworkRule'
-        name: 'https-win'
+        name: 'http-win'
         destinationAddresses: [
           '10.0.30.0/24'
         ]
         destinationPorts: [
-          '443'
+          '80'
         ]
         ipProtocols: [
           'TCP'
@@ -307,7 +306,7 @@ var spokeToSpokeRuleCollections = [
     ]
   }
 ]
-
+/*
 var spokeToDCRuleCollections = [
   {
     name: 'rc-spoke1ToDC'
@@ -548,85 +547,7 @@ var spokeToDCRuleCollections = [
       }
     ]
   }
-]
-
-var spokeToInternetDuplicatedRuleCollections = [
-  {
-    name: 'rc-spoke1ToInternet-dup'
-    priority: 100
-    ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-    action: {
-      type: 'Allow'
-    }
-    rules: [
-      {
-        ruleType: 'ApplicationRule'
-        name: 'google-lnx-dup'
-        protocols: [
-          {
-            protocolType: 'Https'
-            port: 443
-          }
-        ]
-        targetFqdns: [
-          '*.google.com'
-        ]
-        sourceAddresses: [
-          '10.0.20.0/29'
-          '10.0.20.8/29'
-          '10.0.20.16/29'
-          '10.0.20.32/29'
-        ]
-      }
-      {
-        ruleType: 'ApplicationRule'
-        name: 'youtube-lnx-dup'
-        protocols: [
-          {
-            protocolType: 'Https'
-            port: 443
-          }
-          {
-            protocolType: 'Http'
-            port: 80
-          }
-        ]
-        targetFqdns: [
-          '*.youtube.com'
-        ]
-        sourceAddresses: [
-          '10.0.20.0/29'
-          '10.0.20.8/29'
-          '10.0.20.16/29'
-          '10.0.20.32/29'
-        ]
-      }
-      {
-        ruleType: 'ApplicationRule'
-        name: 'websearchengines-lnx-dup'
-        protocols: [
-          {
-            protocolType: 'Https'
-            port: 443
-          }
-          {
-            protocolType: 'Http'
-            port: 80
-          }
-        ]
-        webCategories: [
-          'searchenginesandportals'
-        ]
-        sourceAddresses: [
-          '10.0.20.0/29'
-          '10.0.20.8/29'
-          '10.0.20.16/29'
-          '10.0.20.32/29'
-        ]
-      }
-    ]
-  }
-]
+]*/
 
 var spokeToInternetRuleCollections = [
   {
@@ -971,9 +892,12 @@ var spokeToInternetRuleCollections = [
       }
     ]
   }
+]
+
+var spokeToInternetDuplicatedRuleCollections = [
   {
-    name: 'rc-dcToInternet'
-    priority: 300
+    name: 'rc-spoke1ToInternet-dup'
+    priority: 100
     ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
     action: {
       type: 'Allow'
@@ -981,7 +905,26 @@ var spokeToInternetRuleCollections = [
     rules: [
       {
         ruleType: 'ApplicationRule'
-        name: 'windowsupdates-dc'
+        name: 'google-lnx-dup'
+        protocols: [
+          {
+            protocolType: 'Https'
+            port: 443
+          }
+        ]
+        targetFqdns: [
+          '*.google.com'
+        ]
+        sourceAddresses: [
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
+        ]
+      }
+      {
+        ruleType: 'ApplicationRule'
+        name: 'youtube-lnx-dup'
         protocols: [
           {
             protocolType: 'Https'
@@ -992,18 +935,46 @@ var spokeToInternetRuleCollections = [
             port: 80
           }
         ]
-        fqdnTags: [
-          'WindowsUpdate'
+        targetFqdns: [
+          '*.youtube.com'
         ]
         sourceAddresses: [
-          '10.0.20.0/27'
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
+        ]
+      }
+      {
+        ruleType: 'ApplicationRule'
+        name: 'websearchengines-lnx-dup'
+        protocols: [
+          {
+            protocolType: 'Https'
+            port: 443
+          }
+          {
+            protocolType: 'Http'
+            port: 80
+          }
+        ]
+        webCategories: [
+          'searchenginesandportals'
+        ]
+        sourceAddresses: [
+          '10.0.20.0/29'
+          '10.0.20.8/29'
+          '10.0.20.16/29'
+          '10.0.20.32/29'
         ]
       }
     ]
   }
 ]
 
-resource DNATRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
+
+
+resource DNATRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2024-07-01' = {
   name: '${fwPolicyName}/${DNATRuleCollectionGroupName}'
   properties: {
     priority: 1000
@@ -1013,31 +984,14 @@ resource DNATRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollect
 
 resource spokeToSpokeRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
   name: '${fwPolicyName}/${spokeToSpokeRuleCollectionGroupName}'
-  dependsOn: [
-    DNATRuleCollectionGroup
-  ]
   properties: {
     priority: 2000
     ruleCollections: spokeToSpokeRuleCollections
   }
 }
 
-resource spokeToDCRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
-  name: '${fwPolicyName}/${spokeToDCRuleCollectionGroupName}'
-  dependsOn: [
-    spokeToSpokeRuleCollectionGroup
-  ]
-  properties: {
-    priority: 3000
-    ruleCollections: spokeToDCRuleCollections
-  }
-}
-
 resource spokeToInternetRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
   name: '${fwPolicyName}/${spokeToInternetRuleCollectionGroupName}'
-  dependsOn: [
-    spokeToDCRuleCollectionGroup
-  ]
   properties: {
     priority: 4000
     ruleCollections: spokeToInternetRuleCollections
@@ -1046,9 +1000,6 @@ resource spokeToInternetRuleCollectionGroup 'Microsoft.Network/firewallPolicies/
 
 resource spokeToInternetDuplicatedRuleCollectionGroup 'Microsoft.Network/firewallPolicies/ruleCollectionGroups@2022-05-01' = {
   name: '${fwPolicyName}/${spokeToInternetDuplicatedRuleCollectionGroupName}'
-  dependsOn: [
-    spokeToInternetRuleCollectionGroup
-  ]
   properties: {
     priority: 5000
     ruleCollections: spokeToInternetDuplicatedRuleCollections
