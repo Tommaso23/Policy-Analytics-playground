@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "4061027018020444515"
+      "templateHash": "13728258432076874299"
     }
   },
   "parameters": {
@@ -57,8 +57,8 @@
     "hubSubnetAddrPrefix": "10.0.10.0/26",
     "linuxSubnetAddrPrefix": "10.0.20.0/27",
     "winSubnetAddrPrefix": "10.0.30.0/27",
-    "IIS1ComputerName": "[format('vm-iis1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
-    "IIS2ComputerName": "[format('vm-iis2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "IIS1ComputerName": "[format('vm-win1-{0}', parameters('locationAlias'))]",
+    "IIS2ComputerName": "[format('vm-win2-{0}', parameters('locationAlias'))]",
     "linux1ComputerName": "[format('vm-lnx-1-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "linux2ComputerName": "[format('vm-lnx-2-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "linux1PublicIpName": "[format('pip-{0}', variables('linux1ComputerName'))]",
@@ -873,7 +873,7 @@
             "value": "[parameters('location')]"
           },
           "name": {
-            "value": "nsg-spoke1-in"
+            "value": "nsg-spoke1-itn"
           },
           "securityRules": {
             "value": []
@@ -938,7 +938,7 @@
             "value": "[parameters('location')]"
           },
           "name": {
-            "value": "nsg-spoke2-in"
+            "value": "nsg-spoke2-itn"
           },
           "securityRules": {
             "value": []
@@ -1537,6 +1537,9 @@
         },
         "mode": "Incremental",
         "parameters": {
+          "fwPolicyName": {
+            "value": "[variables('fwPolicyName')]"
+          },
           "firewallPublicIp": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value]"
           }
@@ -1548,39 +1551,22 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.1.42791",
-              "templateHash": "9910176241295152726"
+              "templateHash": "13234781701959795059"
             }
           },
           "parameters": {
             "fwPolicyName": {
-              "type": "string",
-              "defaultValue": "afwp-hub-demo"
-            },
-            "spokeToSpokeRuleCollectionGroupName": {
-              "type": "string",
-              "defaultValue": "rcg-spokeToSpoke"
-            },
-            "spokeToInternetRuleCollectionGroupName": {
-              "type": "string",
-              "defaultValue": "rcg-spokeToInternet"
-            },
-            "spokeToDCRuleCollectionGroupName": {
-              "type": "string",
-              "defaultValue": "rcg-spokeToDC"
-            },
-            "DNATRuleCollectionGroupName": {
-              "type": "string",
-              "defaultValue": "rcg-dnat"
-            },
-            "spokeToInternetDuplicatedRuleCollectionGroupName": {
-              "type": "string",
-              "defaultValue": "rcg-spokeToInternetDuplicated"
+              "type": "string"
             },
             "firewallPublicIp": {
               "type": "string"
             }
           },
           "variables": {
+            "spokeToSpokeRuleCollectionGroupName": "rcg-spokeToSpoke",
+            "spokeToInternetRuleCollectionGroupName": "rcg-spokeToInternet",
+            "DNATRuleCollectionGroupName": "rcg-dnat",
+            "spokeToInternetDuplicatedRuleCollectionGroupName": "rcg-spokeToInternetDuplicated",
             "dnatRuleCollections": [
               {
                 "name": "rc-spoke1dnat",
@@ -1592,7 +1578,7 @@
                 "rules": [
                   {
                     "ruleType": "NatRule",
-                    "name": "ssh-lnx001",
+                    "name": "ssh-lnx01",
                     "translatedAddress": "10.0.20.4",
                     "translatedPort": "22",
                     "sourceAddresses": [
@@ -1610,7 +1596,7 @@
                   },
                   {
                     "ruleType": "NatRule",
-                    "name": "ssh-lnx002",
+                    "name": "ssh-lnx02",
                     "translatedAddress": "10.0.20.5",
                     "translatedPort": "22",
                     "sourceAddresses": [
@@ -1638,7 +1624,7 @@
                 "rules": [
                   {
                     "ruleType": "NatRule",
-                    "name": "rdp-win001",
+                    "name": "rdp-win01",
                     "translatedAddress": "10.0.30.4",
                     "translatedPort": "3389",
                     "sourceAddresses": [
@@ -1656,7 +1642,7 @@
                   },
                   {
                     "ruleType": "NatRule",
-                    "name": "rdp-win002",
+                    "name": "rdp-win02",
                     "translatedAddress": "10.0.30.5",
                     "translatedPort": "3389",
                     "sourceAddresses": [
@@ -1674,9 +1660,9 @@
                   },
                   {
                     "ruleType": "NatRule",
-                    "name": "https-win001",
+                    "name": "https-win01",
                     "translatedAddress": "10.0.30.4",
-                    "translatedPort": "443",
+                    "translatedPort": "80",
                     "sourceAddresses": [
                       "*"
                     ],
@@ -1684,7 +1670,7 @@
                       "[parameters('firewallPublicIp')]"
                     ],
                     "destinationPorts": [
-                      "443"
+                      "80"
                     ],
                     "ipProtocols": [
                       "TCP"
@@ -1692,9 +1678,9 @@
                   },
                   {
                     "ruleType": "NatRule",
-                    "name": "https-win002",
+                    "name": "https-win02",
                     "translatedAddress": "10.0.30.5",
-                    "translatedPort": "443",
+                    "translatedPort": "80",
                     "sourceAddresses": [
                       "*"
                     ],
@@ -1702,7 +1688,7 @@
                       "[parameters('firewallPublicIp')]"
                     ],
                     "destinationPorts": [
-                      "8443"
+                      "8080"
                     ],
                     "ipProtocols": [
                       "TCP"
@@ -1722,12 +1708,12 @@
                 "rules": [
                   {
                     "ruleType": "NetworkRule",
-                    "name": "https-win",
+                    "name": "http-win",
                     "destinationAddresses": [
                       "10.0.30.0/24"
                     ],
                     "destinationPorts": [
-                      "443"
+                      "80"
                     ],
                     "ipProtocols": [
                       "TCP",
@@ -1875,324 +1861,6 @@
                     ],
                     "sourceAddresses": [
                       "10.0.30.0/27"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "spokeToDCRuleCollections": [
-              {
-                "name": "rc-spoke1ToDC",
-                "priority": 100,
-                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
-                "action": {
-                  "type": "Allow"
-                },
-                "rules": [
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "DNS-lnx",
-                    "destinationAddresses": [
-                      "10.0.20.0/27"
-                    ],
-                    "destinationPorts": [
-                      "53",
-                      "54"
-                    ],
-                    "ipProtocols": [
-                      "Any"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.20.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "DNS-lnx-dup",
-                    "destinationAddresses": [
-                      "10.0.20.0/27"
-                    ],
-                    "destinationPorts": [
-                      "53"
-                    ],
-                    "ipProtocols": [
-                      "TCP",
-                      "UDP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.20.0/27"
-                    ]
-                  }
-                ]
-              },
-              {
-                "name": "rc-spoke2ToDC",
-                "priority": 200,
-                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
-                "action": {
-                  "type": "Allow"
-                },
-                "rules": [
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "ldap-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/28",
-                      "10.0.20.16/28",
-                      "10.0.20.32/28",
-                      "10.0.20.48/28",
-                      "10.0.20.64/28",
-                      "10.0.20.80/28",
-                      "10.0.20.96/28",
-                      "10.0.20.112/28",
-                      "10.0.20.128/28",
-                      "10.0.20.144/28",
-                      "10.0.20.160/28",
-                      "10.0.20.176/28",
-                      "10.0.20.192/28",
-                      "10.0.20.208/28",
-                      "10.0.20.224/28",
-                      "10.0.20.240/28"
-                    ],
-                    "destinationPorts": [
-                      "389",
-                      "636"
-                    ],
-                    "ipProtocols": [
-                      "Any"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "ldapgc-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/26",
-                      "10.0.20.64/26",
-                      "10.0.20.128/26",
-                      "10.0.20.192/26"
-                    ],
-                    "destinationPorts": [
-                      "3268",
-                      "3269"
-                    ],
-                    "ipProtocols": [
-                      "TCP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "kerberos-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "88",
-                      "464"
-                    ],
-                    "ipProtocols": [
-                      "TCP",
-                      "UDP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "dns-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "53"
-                    ],
-                    "ipProtocols": [
-                      "TCP",
-                      "UDP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "smb-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "445"
-                    ],
-                    "ipProtocols": [
-                      "Any"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "replication-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "25",
-                      "135"
-                    ],
-                    "ipProtocols": [
-                      "TCP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "dynamic-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "49152-65535"
-                    ],
-                    "ipProtocols": [
-                      "TCP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "time-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "123"
-                    ],
-                    "ipProtocols": [
-                      "UDP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "dfsnetl-win",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "137-139"
-                    ],
-                    "ipProtocols": [
-                      "UDP",
-                      "TCP"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  },
-                  {
-                    "ruleType": "NetworkRule",
-                    "name": "dfsnetl-win-dup",
-                    "destinationAddresses": [
-                      "10.0.20.0/24"
-                    ],
-                    "destinationPorts": [
-                      "137-139"
-                    ],
-                    "ipProtocols": [
-                      "Any"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.30.0/24"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "spokeToInternetDuplicatedRuleCollections": [
-              {
-                "name": "rc-spoke1ToInternet-dup",
-                "priority": 100,
-                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
-                "action": {
-                  "type": "Allow"
-                },
-                "rules": [
-                  {
-                    "ruleType": "ApplicationRule",
-                    "name": "google-lnx-dup",
-                    "protocols": [
-                      {
-                        "protocolType": "Https",
-                        "port": 443
-                      }
-                    ],
-                    "targetFqdns": [
-                      "*.google.com"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.20.0/29",
-                      "10.0.20.8/29",
-                      "10.0.20.16/29",
-                      "10.0.20.32/29"
-                    ]
-                  },
-                  {
-                    "ruleType": "ApplicationRule",
-                    "name": "youtube-lnx-dup",
-                    "protocols": [
-                      {
-                        "protocolType": "Https",
-                        "port": 443
-                      },
-                      {
-                        "protocolType": "Http",
-                        "port": 80
-                      }
-                    ],
-                    "targetFqdns": [
-                      "*.youtube.com"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.20.0/29",
-                      "10.0.20.8/29",
-                      "10.0.20.16/29",
-                      "10.0.20.32/29"
-                    ]
-                  },
-                  {
-                    "ruleType": "ApplicationRule",
-                    "name": "websearchengines-lnx-dup",
-                    "protocols": [
-                      {
-                        "protocolType": "Https",
-                        "port": 443
-                      },
-                      {
-                        "protocolType": "Http",
-                        "port": 80
-                      }
-                    ],
-                    "webCategories": [
-                      "searchenginesandportals"
-                    ],
-                    "sourceAddresses": [
-                      "10.0.20.0/29",
-                      "10.0.20.8/29",
-                      "10.0.20.16/29",
-                      "10.0.20.32/29"
                     ]
                   }
                 ]
@@ -2540,10 +2208,12 @@
                     ]
                   }
                 ]
-              },
+              }
+            ],
+            "spokeToInternetDuplicatedRuleCollections": [
               {
-                "name": "rc-dcToInternet",
-                "priority": 300,
+                "name": "rc-spoke1ToInternet-dup",
+                "priority": 100,
                 "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
                 "action": {
                   "type": "Allow"
@@ -2551,7 +2221,26 @@
                 "rules": [
                   {
                     "ruleType": "ApplicationRule",
-                    "name": "windowsupdates-dc",
+                    "name": "google-lnx-dup",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      }
+                    ],
+                    "targetFqdns": [
+                      "*.google.com"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "youtube-lnx-dup",
                     "protocols": [
                       {
                         "protocolType": "Https",
@@ -2562,11 +2251,37 @@
                         "port": 80
                       }
                     ],
-                    "fqdnTags": [
-                      "WindowsUpdate"
+                    "targetFqdns": [
+                      "*.youtube.com"
                     ],
                     "sourceAddresses": [
-                      "10.0.20.0/27"
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
+                    ]
+                  },
+                  {
+                    "ruleType": "ApplicationRule",
+                    "name": "websearchengines-lnx-dup",
+                    "protocols": [
+                      {
+                        "protocolType": "Https",
+                        "port": 443
+                      },
+                      {
+                        "protocolType": "Http",
+                        "port": 80
+                      }
+                    ],
+                    "webCategories": [
+                      "searchenginesandportals"
+                    ],
+                    "sourceAddresses": [
+                      "10.0.20.0/29",
+                      "10.0.20.8/29",
+                      "10.0.20.16/29",
+                      "10.0.20.32/29"
                     ]
                   }
                 ]
@@ -2576,8 +2291,8 @@
           "resources": [
             {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-              "apiVersion": "2022-05-01",
-              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('DNATRuleCollectionGroupName'))]",
+              "apiVersion": "2024-07-01",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), variables('DNATRuleCollectionGroupName'))]",
               "properties": {
                 "priority": 1000,
                 "ruleCollections": "[variables('dnatRuleCollections')]"
@@ -2586,50 +2301,29 @@
             {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
               "apiVersion": "2022-05-01",
-              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToSpokeRuleCollectionGroupName'))]",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), variables('spokeToSpokeRuleCollectionGroupName'))]",
               "properties": {
                 "priority": 2000,
                 "ruleCollections": "[variables('spokeToSpokeRuleCollections')]"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('DNATRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('DNATRuleCollectionGroupName')), '/')[1])]"
-              ]
+              }
             },
             {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
               "apiVersion": "2022-05-01",
-              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToDCRuleCollectionGroupName'))]",
-              "properties": {
-                "priority": 3000,
-                "ruleCollections": "[variables('spokeToDCRuleCollections')]"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToSpokeRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToSpokeRuleCollectionGroupName')), '/')[1])]"
-              ]
-            },
-            {
-              "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
-              "apiVersion": "2022-05-01",
-              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetRuleCollectionGroupName'))]",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), variables('spokeToInternetRuleCollectionGroupName'))]",
               "properties": {
                 "priority": 4000,
                 "ruleCollections": "[variables('spokeToInternetRuleCollections')]"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToDCRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToDCRuleCollectionGroupName')), '/')[1])]"
-              ]
+              }
             },
             {
               "type": "Microsoft.Network/firewallPolicies/ruleCollectionGroups",
               "apiVersion": "2022-05-01",
-              "name": "[format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetDuplicatedRuleCollectionGroupName'))]",
+              "name": "[format('{0}/{1}', parameters('fwPolicyName'), variables('spokeToInternetDuplicatedRuleCollectionGroupName'))]",
               "properties": {
                 "priority": 5000,
                 "ruleCollections": "[variables('spokeToInternetDuplicatedRuleCollections')]"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/firewallPolicies/ruleCollectionGroups', split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetRuleCollectionGroupName')), '/')[0], split(format('{0}/{1}', parameters('fwPolicyName'), parameters('spokeToInternetRuleCollectionGroupName')), '/')[1])]"
-              ]
+              }
             }
           ]
         }
