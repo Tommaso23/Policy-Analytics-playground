@@ -10,7 +10,6 @@ param locationAlias string
 var hubRgName = 'rg-hub-${workloadName}-${locationAlias}'
 var spoke1RgName = 'rg-spoke1-${workloadName}-${locationAlias}'
 var spoke2RgName = 'rg-spoke2-${workloadName}-${locationAlias}'
-var automationRgName = 'rg-automation-${workloadName}-${locationAlias}'
 
 /*VNET*/
 var hubVnetName = 'vnet-hub-${workloadName}-${locationAlias}' //hub
@@ -72,14 +71,14 @@ var spoke1Subnet = {
   subnetAddrPrefix: linuxSubnetAddrPrefix
   subnetName: 'snet-linux-vms'
   nsgId: spoke1Nsg.outputs.nsgId
-  routeTableId: ''
+  routeTableId: spoke1RouteTable.outputs.rtId
 }
 
 var spoke2Subnet = {
   subnetAddrPrefix: winSubnetAddrPrefix
   subnetName: 'snet-win-vms'
   nsgId: spoke2Nsg.outputs.nsgId
-  routeTableId: ''
+  routeTableId: spoke2RouteTable.outputs.rtId
 }
 
 
@@ -143,14 +142,6 @@ module spoke2ResourceGroup 'modules/resourcegroup.bicep' = {
   params: {
     location: location
     rgName: spoke2RgName
-  }
-}
-
-module automationResourceGroup 'modules/resourcegroup.bicep' = {
-  name: 'automationResourceGroup'
-  params: {
-    location: location
-    rgName: automationRgName
   }
 }
 
