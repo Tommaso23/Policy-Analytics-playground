@@ -34,8 +34,8 @@ param adminUsername string
 @secure()
 param adminPassword string 
 
-var IIS1ComputerName = 'vm-iis-1-${workloadName}-${locationAlias}'
-var IIS2ComputerName = 'vm-iis-2-${workloadName}-${locationAlias}'
+var IIS1ComputerName = 'vm-iis1-${workloadName}-${locationAlias}'
+var IIS2ComputerName = 'vm-iis2-${workloadName}-${locationAlias}'
 var linux1ComputerName = 'vm-lnx-1-${workloadName}-${locationAlias}'
 var linux2ComputerName = 'vm-lnx-2-${workloadName}-${locationAlias}'
 var linux1PublicIpName = 'pip-${linux1ComputerName}'
@@ -239,7 +239,7 @@ module spoke1ToHubPeering 'modules/vnetpeering.bicep' = {
     destinationVnetId: hubVnet.outputs.vnetId
     allowForwardedTraffic: true
     allowGatewayTransit: false
-    useRemoteGateways: true 
+    useRemoteGateways: false
   }
   dependsOn: [
     spoke1Vnet
@@ -255,7 +255,7 @@ module spoke2ToHubPeering 'modules/vnetpeering.bicep' = {
     destinationVnetId: hubVnet.outputs.vnetId
     allowForwardedTraffic: true
     allowGatewayTransit: false
-    useRemoteGateways: true 
+    useRemoteGateways: false 
   }
   dependsOn: [
     spoke2Vnet
