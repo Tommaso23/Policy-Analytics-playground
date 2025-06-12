@@ -1,12 +1,13 @@
-param vmName string
-param location string = resourceGroup().location
+param virtualMachineName string
+param location string 
 
-resource vm 'Microsoft.Compute/virtualMachines@2022-08-01' existing = {
-  name: vmName
+resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-11-01' existing = {
+  name: virtualMachineName
 }
 
-resource taskSchedulerExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-01' = {
-  name: '${vm.name}/setupScheduledTask'
+resource taskSchedulerExtension 'Microsoft.Compute/virtualMachines/extensions@2024-11-01' = {
+  parent: virtualMachine
+  name: 'setupScheduledTask'
   location: location
   properties: {
     publisher: 'Microsoft.Compute'
@@ -39,26 +40,26 @@ foreach (\$url in \$urls) {
 
 # Ping IP address with SSH
 try {
-    \$ping = Test-NetConnection -ComputerName 10.0.30.5 -Port 22
+    \$ping = Test-NetConnection -ComputerName 10.0.20.5 -Port 22
     if (\$ping.PingSucceeded) {
-        Write-Output "Successfully pinged 10.0.30.5"
+        Write-Output "Successfully pinged 10.0.20.5"
     } else {
-        Write-Output "Failed to ping 10.0.30.5"
+        Write-Output "Failed to ping 10.0.20.5"
     }
 } catch {
-    Write-Output "Error pinging 10.0.30.5"
+    Write-Output "Error pinging 10.0.20.5"
 }
 
 # Ping IP address with ICMP
 try {
-    \$ping = Test-NetConnection -ComputerName 10.0.30.40
+    \$ping = Test-NetConnection -ComputerName 10.0.20.4
     if (\$ping.PingSucceeded) {
-        Write-Output "Successfully pinged 10.0.30.40"
+        Write-Output "Successfully pinged 10.0.20.4"
     } else {
-        Write-Output "Failed to ping 10.0.30.40"
+        Write-Output "Failed to ping 10.0.20.4"
     }
 } catch {
-    Write-Output "Error pinging 10.0.30.40"
+    Write-Output "Error pinging 10.0.20.4"
 }
 "@
 
@@ -72,15 +73,9 @@ Register-ScheduledTask -TaskName "ConnectivityMonitor" -Action $action -Trigger 
 '''
 
 
-param vmName string
-param location string = resourceGroup().location
-
-resource vm 'Microsoft.Compute/virtualMachines@2022-08-01' existing = {
-  name: vmName
-}
-
-resource cronJobExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-01' = {
-  name: '${vm.name}/installCronJobs'
+resource cronJobExtension 'Microsoft.Compute/virtualMachines/extensions@2024-11-01' = {
+  parent: virtualMachine
+  name: 'installCronJobs'
   location: location
   properties: {
     publisher: 'Microsoft.Azure.Extensions'
@@ -93,21 +88,19 @@ resource cronJobExtension 'Microsoft.Compute/virtualMachines/extensions@2022-08-
   }
 }
 
+//TODO: Dynamic public IP for Firewall
 var cronJobScript = '''
 #!/bin/bash
 
-echo "Aggiunta cron jobs..."
-
-# Salva cron esistente + aggiunte
 (crontab -l 2>/dev/null; cat <<EOF
-*/5 * * * * nc -w4 10.0.40.4 443
-*/5 * * * * nc -w4 10.0.40.5 443
-*/20 * * * * nc -w4 72.146.64.19 443
-*/20 * * * * nc -w4 72.146.64.19 8443
-*/20 * * * * ping -c4 10.0.40.4
-*/20 * * * * ping -c4 10.0.40.5
-*/5 * * * * nc -w4 10.0.40.4 3389
-*/5 * * * * nc -w4 10.0.40.5 3389
+*/5 * * * * nc -w4 10.0.30.4 80
+*/5 * * * * nc -w4 10.0.30.5 80
+*/20 * * * * nc -w4 72.146.64.19 80
+*/20 * * * * nc -w4 72.146.64.19 8080
+*/20 * * * * ping -c4 10.0.30.4
+*/20 * * * * ping -c4 10.0.30.5
+*/5 * * * * nc -w4 10.0.30.4 3389
+*/5 * * * * nc -w4 10.0.30.5 3389
 */20 * * * * nslookup google.com && nslookup microsoft.com && nslookup azure.com && nslookup bing.com && nslookup youtube.com
 */20 * * * * curl -IL https://google.com
 */20 * * * * curl -IL https://bing.com
