@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "10725698779255708435"
+      "templateHash": "1815796461259216184"
     }
   },
   "parameters": {
@@ -24,6 +24,10 @@
       "metadata": {
         "description": "Alias for the location, used to create unique resource names."
       }
+    },
+    "uni": {
+      "type": "string",
+      "defaultValue": "[uniqueString(parameters('workloadName'), parameters('locationAlias'))]"
     },
     "adminUsername": {
       "type": "string",
