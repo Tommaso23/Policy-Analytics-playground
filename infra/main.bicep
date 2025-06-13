@@ -5,6 +5,7 @@ param location string = deployment().location
 param workloadName string
 @description('Alias for the location, used to create unique resource names.')
 param locationAlias string
+param uni string = uniqueString(workloadName, locationAlias)
 
 /*Resource Groups*/
 var hubRgName = 'rg-hub-${workloadName}-${locationAlias}'
@@ -523,6 +524,7 @@ module spoke1LinuxVM2 'modules/virtualmachine.bicep' = {
     sku: linuxSku
   }
 }
+
 
 
 
