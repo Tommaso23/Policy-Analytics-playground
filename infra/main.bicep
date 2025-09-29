@@ -365,7 +365,6 @@ module azureFirewallPublicIp 'modules/publicip.bicep' = {
   ]
 }
 
-
 module azureFirewall 'modules/firewall.bicep' = {
   name: 'azureFirewall'
   scope: resourceGroup(hubRgName)

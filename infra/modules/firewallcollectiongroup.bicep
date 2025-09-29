@@ -98,7 +98,7 @@ var dnatRuleCollections = [
       }
       {
         ruleType: 'NatRule'
-        name: 'https-win01'
+        name: 'http-win01'
         translatedAddress: '10.0.30.4'
         translatedPort: '80'
         sourceAddresses: [
@@ -116,7 +116,7 @@ var dnatRuleCollections = [
       }
       {
         ruleType: 'NatRule'
-        name: 'https-win02'
+        name: 'http-win02'
         translatedAddress: '10.0.30.5'
         translatedPort: '80'
         sourceAddresses: [
