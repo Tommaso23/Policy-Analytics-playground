@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "11324150945254687208"
+      "templateHash": "13086160969064642228"
     }
   },
   "parameters": {
@@ -76,15 +76,6 @@
       "autoUpgradeMinorVersion": true,
       "protectedSettings": {
         "commandToExecute": "powershell.exe Add-WindowsFeature Web-Server; powershell Add-Content -Path \"C:\\inetpub\\wwwroot\\Default.htm\" -Value $($env:computername); powershell Set-NetFirewallProfile -Enabled False"
-      }
-    },
-    "taskSchedulerConfig": {
-      "publisher": "Microsoft.Compute",
-      "type": "CustomScriptExtension",
-      "typeHandlerVersion": "1.10",
-      "autoUpgradeMinorVersion": true,
-      "protectedSettings": {
-        "commandToExecute": "        powershell -ExecutionPolicy Unrestricted -Command \"& {\n    # Ensure scripts folder exists\n    New-Item -Path C:\\scripts -ItemType Directory -Force\n\n    # Write automation.ps1 with connectivity checks\n    @'\n# Define the URLs and IPs\n$urls = @(\"https://youtube.com\", \"https://reddit.com\", \"https://jackdaniels.com\")\n\n# Make HTTP requests\nforeach ($url in $urls) {\n    try {\n        $response = Invoke-WebRequest -Uri $url\n        Write-Output \"Successfully accessed $url\"\n    } catch {\n        Write-Output \"Failed to access $url\"\n    }\n}\n\n# Ping IP address with SSH\ntry {\n    $ping = Test-NetConnection -ComputerName 10.0.30.5 -Port 22\n    if ($ping.PingSucceeded) {\n        Write-Output \"Successfully pinged $ip\"\n    } else {\n        Write-Output \"Failed to ping $ip\"\n    }\n} catch {\n    Write-Output \"Error pinging $ip\"\n}\n\n# Ping Ip address with ICMP\ntry {\n    $ping = Test-NetConnection -ComputerName 10.0.30.4\n    if ($ping.PingSucceeded) {\n        Write-Output \"Successfully pinged $ip\"\n    } else {\n        Write-Output \"Failed to ping $ip\"\n    }\n} catch {\n    Write-Output \"Error pinging $ip\"\n}\n'@ | Set-Content -Path C:\\scripts\\automation.ps1 -Force\n\n    # Define scheduled task action\n    $Action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument '-File C:\\scripts\\automation.ps1'\n\n    # Trigger: every 5 minutes forever\n    $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `\n        -RepetitionInterval (New-TimeSpan -Minutes 5) `\n        -RepetitionDuration ([TimeSpan]::MaxValue)\n\n    # Register scheduled task\n    Register-ScheduledTask -Action $Action -Trigger $Trigger `\n        -TaskName 'AutomationTask' `\n        -Description 'Runs automation.ps1 every 5 minutes' `\n        -User 'SYSTEM' -RunLevel Highest -Force\n}\"\n\n      "
       }
     },
     "hubSubnet": {
@@ -2713,69 +2704,6 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "TaskSchedulerConfiguration2",
-      "resourceGroup": "[variables('spoke2RgName')]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "properties": {
-            "value": "[variables('taskSchedulerConfig')]"
-          },
-          "vmExtensionName": {
-            "value": "TaskSchedulerConfig"
-          },
-          "vmName": {
-            "value": "[variables('IIS2ComputerName')]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "17106616795754584849"
-            }
-          },
-          "parameters": {
-            "vmName": {
-              "type": "string"
-            },
-            "vmExtensionName": {
-              "type": "string"
-            },
-            "location": {
-              "type": "string"
-            },
-            "properties": {
-              "type": "object"
-            }
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Compute/virtualMachines/extensions",
-              "apiVersion": "2020-12-01",
-              "name": "[format('{0}/{1}', parameters('vmName'), parameters('vmExtensionName'))]",
-              "location": "[parameters('location')]",
-              "properties": "[parameters('properties')]"
-            }
-          ]
-        }
-      },
-      "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'vmIIS-2')]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
       "name": "linux1PublicIp",
       "resourceGroup": "[variables('spoke1RgName')]",
       "properties": {
@@ -3301,7 +3229,7 @@
         "mode": "Incremental",
         "parameters": {
           "vmName": {
-            "value": "vmIIS-2"
+            "value": "[variables('IIS2ComputerName')]"
           },
           "location": {
             "value": "[parameters('location')]"
@@ -3314,7 +3242,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "13393803083550899933"
+              "templateHash": "9706491353012024601"
             }
           },
           "parameters": {
@@ -3329,11 +3257,11 @@
             {
               "type": "Microsoft.Compute/virtualMachines/runCommands",
               "apiVersion": "2022-03-01",
-              "name": "[format('{0}/AadAppProxyPrerequisites', parameters('vmName'))]",
+              "name": "[format('{0}/CreateAutomationTask', parameters('vmName'))]",
               "location": "[parameters('location')]",
               "properties": {
                 "source": {
-                  "script": "        # Ensure scripts directory exists\n        New-Item -Path \"C:\\\\scripts\" -ItemType Directory -Force | Out-Null\n\n        # Download automation.ps1 from GitHub (public repo raw link)\n        $scriptUrl = \"https://github.com/Tommaso23/Policy-Analytics-playground/tree/main/scripts/automation.ps1\"\n        $destination = \"C:\\\\scripts\\\\automation.ps1\"\n        Invoke-WebRequest -Uri $scriptUrl -OutFile $destination -UseBasicParsing\n\n        # Define Scheduled Task action\n        $Action = New-ScheduledTaskAction -Execute \"PowerShell.exe\" -Argument \"-NoProfile -ExecutionPolicy Bypass -File C:\\\\scripts\\\\automation.ps1\"\n\n        # Define trigger (every 5 minutes, indefinitely)\n        $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]:: -Days 90)\n\n        # Register scheduled task to run as SYSTEM\n        Register-ScheduledTask -Action $Action -Trigger $Trigger -TaskName \"AutomationTask\" -Description \"Runs automation.ps1 every 5 minutes\" -User \"SYSTEM\" -RunLevel Highest -Force "
+                  "script": "# Ensure scripts directory exists\nNew-Item -Path \"C:\\\\scripts\" -ItemType Directory -Force | Out-Null\n\n# Write automation.ps1 inline\n@'\n# Example automation script\n$urls = @(\"https://google.com\", \"https://reddit.com\", \"https://jackdaniels.com\")\n\nforeach ($url in $urls) {\n    try {\n        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10\n        \"[$(Get-Date)] SUCCESS: $url\" | Out-File C:\\\\scripts\\\\log.txt -Append\n    } catch {\n        \"[$(Get-Date)] FAILED: $url\" | Out-File C:\\\\scripts\\\\log.txt -Append\n    }\n}\n\ntry {\n    $sshTarget = \"10.0.20.5\"\n    $pingSSH = Test-NetConnection -ComputerName $sshTarget -Port 22 -WarningAction SilentlyContinue\n    if ($pingSSH.TcpTestSucceeded) {\n        \"[$(Get-Date)] SUCCESS: TCP 22 reachable on $sshTarget\" | Out-File C:\\\\scripts\\\\log.txt -Append\n    } else {\n        \"[$(Get-Date)] FAILED: TCP 22 not reachable on $sshTarget\" | Out-File C:\\\\scripts\\\\log.txt -Append\n    }\n} catch {\n    \"[$(Get-Date)] ERROR: Could not test TCP 22 on $sshTarget\" | Out-File C:\\\\scripts\\\\log.txt -Append\n}\n    try {\n    $icmpTarget = \"10.0.20.4\"\n    $ping = Test-NetConnection -ComputerName $icmpTarget -WarningAction SilentlyContinue\n    if ($ping.PingSucceeded) {\n        \"[$(Get-Date)] SUCCESS: ICMP reachable on $icmpTarget\" | Out-File C:\\\\scripts\\\\log.txt -Append\n    } else {\n        \"[$(Get-Date)] FAILED: ICMP not reachable on $icmpTarget\" | Out-File C:\\\\scripts\\\\log.txt -Append\n    }\n} catch {\n    \"[$(Get-Date)] ERROR: Could not test ICMP on $icmpTarget\" | Out-File C:\\\\scripts\\\\log.txt -Append\n}\n'@ | Set-Content -Path \"C:\\\\scripts\\\\automation.ps1\" -Force\n\n# Define Scheduled Task action\n$Action = New-ScheduledTaskAction -Execute \"PowerShell.exe\" -Argument \"-NoProfile -ExecutionPolicy Bypass -File C:\\\\scripts\\\\automation.ps1\"\n\n# Trigger every 5 minutes, for 90 days\n$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `\n  -RepetitionInterval (New-TimeSpan -Minutes 10) `\n  -RepetitionDuration (New-TimeSpan -Days 90)\n\n# Register scheduled task\nRegister-ScheduledTask -Action $Action -Trigger $Trigger -TaskName \"AutomationTask\" -Description \"Runs automation.ps1 every 5 minutes for 3 months\" -User \"SYSTEM\" -RunLevel Highest -Force\n"
                 }
               }
             }
