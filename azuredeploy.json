@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "14824691210131700805"
+      "templateHash": "11324150945254687208"
     }
   },
   "parameters": {
@@ -24,10 +24,6 @@
       "metadata": {
         "description": "Alias for the location, used to create unique resource names."
       }
-    },
-    "uni": {
-      "type": "string",
-      "defaultValue": "[uniqueString(parameters('workloadName'), parameters('locationAlias'))]"
     },
     "adminUsername": {
       "type": "string",
@@ -82,6 +78,15 @@
         "commandToExecute": "powershell.exe Add-WindowsFeature Web-Server; powershell Add-Content -Path \"C:\\inetpub\\wwwroot\\Default.htm\" -Value $($env:computername); powershell Set-NetFirewallProfile -Enabled False"
       }
     },
+    "taskSchedulerConfig": {
+      "publisher": "Microsoft.Compute",
+      "type": "CustomScriptExtension",
+      "typeHandlerVersion": "1.10",
+      "autoUpgradeMinorVersion": true,
+      "protectedSettings": {
+        "commandToExecute": "        powershell -ExecutionPolicy Unrestricted -Command \"& {\n    # Ensure scripts folder exists\n    New-Item -Path C:\\scripts -ItemType Directory -Force\n\n    # Write automation.ps1 with connectivity checks\n    @'\n# Define the URLs and IPs\n$urls = @(\"https://youtube.com\", \"https://reddit.com\", \"https://jackdaniels.com\")\n\n# Make HTTP requests\nforeach ($url in $urls) {\n    try {\n        $response = Invoke-WebRequest -Uri $url\n        Write-Output \"Successfully accessed $url\"\n    } catch {\n        Write-Output \"Failed to access $url\"\n    }\n}\n\n# Ping IP address with SSH\ntry {\n    $ping = Test-NetConnection -ComputerName 10.0.30.5 -Port 22\n    if ($ping.PingSucceeded) {\n        Write-Output \"Successfully pinged $ip\"\n    } else {\n        Write-Output \"Failed to ping $ip\"\n    }\n} catch {\n    Write-Output \"Error pinging $ip\"\n}\n\n# Ping Ip address with ICMP\ntry {\n    $ping = Test-NetConnection -ComputerName 10.0.30.4\n    if ($ping.PingSucceeded) {\n        Write-Output \"Successfully pinged $ip\"\n    } else {\n        Write-Output \"Failed to ping $ip\"\n    }\n} catch {\n    Write-Output \"Error pinging $ip\"\n}\n'@ | Set-Content -Path C:\\scripts\\automation.ps1 -Force\n\n    # Define scheduled task action\n    $Action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument '-File C:\\scripts\\automation.ps1'\n\n    # Trigger: every 5 minutes forever\n    $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `\n        -RepetitionInterval (New-TimeSpan -Minutes 5) `\n        -RepetitionDuration ([TimeSpan]::MaxValue)\n\n    # Register scheduled task\n    Register-ScheduledTask -Action $Action -Trigger $Trigger `\n        -TaskName 'AutomationTask' `\n        -Description 'Runs automation.ps1 every 5 minutes' `\n        -User 'SYSTEM' -RunLevel Highest -Force\n}\"\n\n      "
+      }
+    },
     "hubSubnet": {
       "subnetAddrPrefix": "[variables('hubSubnetAddrPrefix')]",
       "subnetName": "AzureFirewallSubnet",
@@ -93,7 +98,8 @@
     "spoke2RouteTableName": "rt-spoke2-vnet",
     "firewallName": "[format('afw-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
     "fwTier": "Premium",
-    "fwPolicyName": "[format('afwp-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]"
+    "fwPolicyName": "[format('afwp-hub-{0}-{1}', parameters('workloadName'), parameters('locationAlias'))]",
+    "publicIpAddressName": "pip-afw-hub-itn"
   },
   "resources": [
     {
@@ -1122,16 +1128,16 @@
         "mode": "Incremental",
         "parameters": {
           "addressPrefix": {
-            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].properties.addressPrefix]"
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].properties.addressPrefix]"
           },
           "nextHopType": {
-            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].properties.nextHopType]"
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].properties.nextHopType]"
           },
           "nextHopIp": {
-            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].properties.nextHopIpAddress]"
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].properties.nextHopIpAddress]"
           },
           "routeName": {
-            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[0].name]"
+            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)))[0].name]"
           },
           "routeTableName": {
             "value": "[variables('spoke1RouteTableName')]"
@@ -1180,81 +1186,6 @@
       },
       "dependsOn": [
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall')]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp')]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'Spoke1RouteTable')]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
-      "name": "spoke1SubnetRouteTableRoutesConf2",
-      "resourceGroup": "[variables('spoke1RgName')]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "addressPrefix": {
-            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[1].properties.addressPrefix]"
-          },
-          "nextHopType": {
-            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[1].properties.nextHopType]"
-          },
-          "nextHopIp": {
-            "value": ""
-          },
-          "routeName": {
-            "value": "[createArray(createObject('name', 'default-via-azfw', 'properties', createObject('addressPrefix', '0.0.0.0/0', 'nextHopType', 'VirtualAppliance', 'nextHopIpAddress', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall'), '2022-09-01').outputs.firewallPrivateIp.value)), createObject('name', 'fwpip-via-internet', 'properties', createObject('addressPrefix', format('{0}/32', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp'), '2022-09-01').outputs.ipAddress.value), 'nextHopType', 'Internet')))[1].name]"
-          },
-          "routeTableName": {
-            "value": "[variables('spoke1RouteTableName')]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "8273049832821829620"
-            }
-          },
-          "parameters": {
-            "routeTableName": {
-              "type": "string"
-            },
-            "routeName": {
-              "type": "string"
-            },
-            "addressPrefix": {
-              "type": "string"
-            },
-            "nextHopType": {
-              "type": "string"
-            },
-            "nextHopIp": {
-              "type": "string"
-            }
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Network/routeTables/routes",
-              "apiVersion": "2019-11-01",
-              "name": "[format('{0}/{1}', parameters('routeTableName'), parameters('routeName'))]",
-              "properties": {
-                "addressPrefix": "[parameters('addressPrefix')]",
-                "nextHopType": "[parameters('nextHopType')]",
-                "nextHopIpAddress": "[parameters('nextHopIp')]"
-              }
-            }
-          ]
-        }
-      },
-      "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewall')]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('hubRgName')), 'Microsoft.Resources/deployments', 'azureFirewallPublicIp')]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'Spoke1RouteTable')]"
       ]
     },
@@ -1346,7 +1277,7 @@
             "value": "[parameters('location')]"
           },
           "publicIpAddressName": {
-            "value": "pip-afw-hub-in"
+            "value": "[variables('publicIpAddressName')]"
           }
         },
         "template": {
@@ -2782,7 +2713,7 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "IISConfiguration-2",
+      "name": "TaskSchedulerConfiguration2",
       "resourceGroup": "[variables('spoke2RgName')]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -2794,10 +2725,10 @@
             "value": "[parameters('location')]"
           },
           "properties": {
-            "value": "[variables('spokeVmIISExtensionProperties')]"
+            "value": "[variables('taskSchedulerConfig')]"
           },
           "vmExtensionName": {
-            "value": "IIS-installation"
+            "value": "TaskSchedulerConfig"
           },
           "vmName": {
             "value": "[variables('IIS2ComputerName')]"
@@ -3356,6 +3287,61 @@
       "dependsOn": [
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'linux2PublicIp')]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke1RgName')), 'Microsoft.Resources/deployments', 'spoke1Vnet')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "taskSchedulerWin2",
+      "resourceGroup": "[variables('spoke2RgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "vmName": {
+            "value": "vmIIS-2"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "13393803083550899933"
+            }
+          },
+          "parameters": {
+            "vmName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/virtualMachines/runCommands",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/AadAppProxyPrerequisites', parameters('vmName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "source": {
+                  "script": "        # Ensure scripts directory exists\n        New-Item -Path \"C:\\\\scripts\" -ItemType Directory -Force | Out-Null\n\n        # Download automation.ps1 from GitHub (public repo raw link)\n        $scriptUrl = \"https://github.com/Tommaso23/Policy-Analytics-playground/tree/main/scripts/automation.ps1\"\n        $destination = \"C:\\\\scripts\\\\automation.ps1\"\n        Invoke-WebRequest -Uri $scriptUrl -OutFile $destination -UseBasicParsing\n\n        # Define Scheduled Task action\n        $Action = New-ScheduledTaskAction -Execute \"PowerShell.exe\" -Argument \"-NoProfile -ExecutionPolicy Bypass -File C:\\\\scripts\\\\automation.ps1\"\n\n        # Define trigger (every 5 minutes, indefinitely)\n        $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]:: -Days 90)\n\n        # Register scheduled task to run as SYSTEM\n        Register-ScheduledTask -Action $Action -Trigger $Trigger -TaskName \"AutomationTask\" -Description \"Runs automation.ps1 every 5 minutes\" -User \"SYSTEM\" -RunLevel Highest -Force "
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('spoke2RgName')), 'Microsoft.Resources/deployments', 'vmIIS-2')]"
       ]
     }
   ]
