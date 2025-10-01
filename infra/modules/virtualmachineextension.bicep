@@ -8,3 +8,4 @@ resource vmExtension 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' =
   location: location
   properties: properties
 }
+

@@ -5,7 +5,7 @@ param location string = deployment().location
 param workloadName string
 @description('Alias for the location, used to create unique resource names.')
 param locationAlias string
-param uni string = uniqueString(workloadName, locationAlias)
+//param uni string = uniqueString(workloadName, locationAlias)
 
 /*Resource Groups*/
 var hubRgName = 'rg-hub-${workloadName}-${locationAlias}'
@@ -60,6 +60,77 @@ var spokeVmIISExtensionProperties = {
   }
 }
 
+var taskSchedulerConfig = {
+  publisher: 'Microsoft.Compute'
+  type: 'CustomScriptExtension'
+  typeHandlerVersion: '1.10'
+  autoUpgradeMinorVersion: true
+  protectedSettings: {
+    commandToExecute: '''
+        powershell -ExecutionPolicy Unrestricted -Command "& {
+    # Ensure scripts folder exists
+    New-Item -Path C:\scripts -ItemType Directory -Force
+
+    # Write automation.ps1 with connectivity checks
+    @'
+# Define the URLs and IPs
+$urls = @("https://youtube.com", "https://reddit.com", "https://jackdaniels.com")
+
+# Make HTTP requests
+foreach ($url in $urls) {
+    try {
+        $response = Invoke-WebRequest -Uri $url
+        Write-Output "Successfully accessed $url"
+    } catch {
+        Write-Output "Failed to access $url"
+    }
+}
+
+# Ping IP address with SSH
+try {
+    $ping = Test-NetConnection -ComputerName 10.0.30.5 -Port 22
+    if ($ping.PingSucceeded) {
+        Write-Output "Successfully pinged $ip"
+    } else {
+        Write-Output "Failed to ping $ip"
+    }
+} catch {
+    Write-Output "Error pinging $ip"
+}
+
+# Ping Ip address with ICMP
+try {
+    $ping = Test-NetConnection -ComputerName 10.0.30.4
+    if ($ping.PingSucceeded) {
+        Write-Output "Successfully pinged $ip"
+    } else {
+        Write-Output "Failed to ping $ip"
+    }
+} catch {
+    Write-Output "Error pinging $ip"
+}
+'@ | Set-Content -Path C:\scripts\automation.ps1 -Force
+
+    # Define scheduled task action
+    $Action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument '-File C:\scripts\automation.ps1'
+
+    # Trigger: every 5 minutes forever
+    $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
+        -RepetitionInterval (New-TimeSpan -Minutes 5) `
+        -RepetitionDuration ([TimeSpan]::MaxValue)
+
+    # Register scheduled task
+    Register-ScheduledTask -Action $Action -Trigger $Trigger `
+        -TaskName 'AutomationTask' `
+        -Description 'Runs automation.ps1 every 5 minutes' `
+        -User 'SYSTEM' -RunLevel Highest -Force
+}"
+
+      '''
+  }
+}
+
+
 var hubSubnet = {
   subnetAddrPrefix: hubSubnetAddrPrefix
   subnetName: 'AzureFirewallSubnet'
@@ -91,6 +162,7 @@ var spoke2RouteTableName = 'rt-spoke2-vnet'
 var firewallName = 'afw-hub-${workloadName}-${locationAlias}'
 var fwTier = 'Premium'
 var fwPolicyName = 'afwp-hub-${workloadName}-${locationAlias}'
+var publicIpAddressName = 'pip-afw-hub-itn'
 
 var spoke1SubnetRouteTableRoutes = [
   {
@@ -101,13 +173,13 @@ var spoke1SubnetRouteTableRoutes = [
       nextHopIpAddress: azureFirewall.outputs.firewallPrivateIp
     }
   }
-  {
+  /*{
     name: 'fwpip-via-internet'
     properties: {
       addressPrefix: '${azureFirewallPublicIp.outputs.ipAddress}/32'
       nextHopType: 'Internet'
     }
-  }
+  }*/
 ]
 
 var spoke2SubnetRouteTableRoutes = [
@@ -322,7 +394,7 @@ module spoke1SubnetRouteTableRoutesConf 'modules/routetableroute.bicep' = {
   ]
 }
 
-module spoke1SubnetRouteTableRoutesConf2 'modules/routetableroute.bicep' = {
+/*module spoke1SubnetRouteTableRoutesConf2 'modules/routetableroute.bicep' = {
   name: 'spoke1SubnetRouteTableRoutesConf2'
   scope: resourceGroup(spoke1RgName)
   params: {
@@ -335,7 +407,7 @@ module spoke1SubnetRouteTableRoutesConf2 'modules/routetableroute.bicep' = {
   dependsOn: [
     spoke1RouteTable
   ]
-}
+}*/
 
 module spoke2SubnetRouteTableRoutesConf 'modules/routetableroute.bicep' = {
   name: 'spoke2SubnetRouteTableRoutesConf'
@@ -358,7 +430,7 @@ module azureFirewallPublicIp 'modules/publicip.bicep' = {
   scope: resourceGroup(hubRgName)
   params: {
     location: location
-    publicIpAddressName: 'pip-afw-hub-in'
+    publicIpAddressName: publicIpAddressName
   }
   dependsOn: [
     hubResourceGroup
@@ -448,7 +520,7 @@ module IISConfiguration1 'modules/virtualmachineextension.bicep' = {
   ]
 }
 
-module IISConfiguration2 'modules/virtualmachineextension.bicep' = {
+/*module IISConfiguration2 'modules/virtualmachineextension.bicep' = {
   name: 'IISConfiguration-2'
   scope: resourceGroup(spoke2RgName)
   params: {
@@ -461,6 +533,36 @@ module IISConfiguration2 'modules/virtualmachineextension.bicep' = {
     vmIIS2
   ]
 }
+
+module TaskSchedulerConfiguration1 'modules/virtualmachineextension.bicep' = {
+  name: 'TaskSchedulerConfiguration1'
+  scope: resourceGroup(spoke2RgName)
+  params: {
+    location: location
+    properties: taskSchedulerConfig
+    vmExtensionName: 'TaskSchedulerConfig'
+    vmName: IIS1ComputerName
+  }
+  dependsOn: [
+    vmIIS1
+  ]
+}
+*/  
+
+module TaskSchedulerConfiguration2 'modules/virtualmachineextension.bicep' = {
+  name: 'TaskSchedulerConfiguration2'
+  scope: resourceGroup(spoke2RgName)
+  params: {
+    location: location
+    properties: taskSchedulerConfig
+    vmExtensionName: 'TaskSchedulerConfig'
+    vmName: IIS2ComputerName
+  }
+  dependsOn: [
+    vmIIS2
+  ]
+}
+
 
 module linux1PublicIp 'modules/publicip.bicep' = {
   name: 'linux1PublicIp'
@@ -524,6 +626,26 @@ module spoke1LinuxVM2 'modules/virtualmachine.bicep' = {
   }
 }
 
+/*module cronjobLinuxConfiguration 'modules/virtualmachineextension.bicep' = {
+  name: 'cronjobLinuxConfiguration'
+  scope: resourceGroup(spoke1RgName)
+  params: {
+    location: location
+    properties:cronjobConfig
+    vmExtensionName: 'cronjobConfig1'
+    vmName: linux1ComputerName
+  }
+  dependsOn: [
+    spoke1LinuxVM1
+  ]
+}
+*/
 
-
-
+module taskSchedulerWin2 'modules/runcommand.bicep' = {
+  name: 'taskSchedulerWin2'
+  scope: resourceGroup(spoke2RgName)
+  params: {
+    vmName: vmIIS2.name
+    location: location
+  }
+}
